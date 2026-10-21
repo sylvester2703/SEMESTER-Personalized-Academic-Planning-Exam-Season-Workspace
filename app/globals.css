@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-serif: "Newsreader", Georgia, Cambria, "Times New Roman", Times, serif;
+    --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    --bg-paper: #F7F5EF;
+    --text-ink: #202722;
+    --text-muted: #58655D;
+    --accent-forest: #2D5541;
+    --accent-sage: #E6EDE2;
+    --accent-amber: #D99B38;
+    --border-subtle: #DFDED6;
+    --surface-white: #FFFFFF;
+  }
+
+  .dark {
+    --bg-paper: #131715;
+    --text-ink: #F2EFE9;
+    --text-muted: #8F9E94;
+    --accent-forest: #437D5F;
+    --accent-sage: #233128;
+    --accent-amber: #E2A644;
+    --border-subtle: #2A332D;
+    --surface-white: #1A211D;
+  }
+
+  body {
+    background-color: var(--bg-paper);
+    color: var(--text-ink);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  /* Tabular numbers for countdowns, times, and statistics */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Accessible focus indicators */
+  *:focus-visible {
+    outline: 2px solid var(--accent-forest);
+    outline-offset: 2px;
+  }
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(88, 101, 93, 0.25);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(88, 101, 93, 0.45);
+}
+
+/* Subtle editorial paper rule */
+.editorial-rule {
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
