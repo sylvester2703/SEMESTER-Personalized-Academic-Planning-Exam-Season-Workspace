@@ -3,7 +3,7 @@
 import React from 'react';
 import { StudySession, Subject } from '@/types';
 import { format } from 'date-fns';
-import { CheckCircle2, Circle, Clock, Play, Plus, BookOpen, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Play, Plus, BookOpen, AlertCircle, HeartHandshake } from 'lucide-react';
 
 interface TodayPlanProps {
   sessions: StudySession[];
@@ -12,6 +12,7 @@ interface TodayPlanProps {
   onStartFocus: (sessionId: string, subjectId: string) => void;
   onAddSession: () => void;
   onViewTimetable: () => void;
+  onRecoverMissedSession?: (session: StudySession) => void;
 }
 
 export function TodayPlan({
@@ -21,6 +22,7 @@ export function TodayPlan({
   onStartFocus,
   onAddSession,
   onViewTimetable,
+  onRecoverMissedSession,
 }: TodayPlanProps) {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const todaySessions = sessions
@@ -140,6 +142,17 @@ export function TodayPlan({
 
                   {/* Right: Actions */}
                   <div className="flex items-center gap-1.5 shrink-0 self-center">
+                    {!sess.completed && onRecoverMissedSession && (
+                      <button
+                        onClick={() => onRecoverMissedSession(sess)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-ink-500 hover:text-ink-900 dark:hover:text-white hover:bg-paper-200 dark:hover:bg-paper-800 text-xs transition-colors"
+                        title="Reschedule or split this session without guilt"
+                      >
+                        <HeartHandshake className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                        <span className="hidden sm:inline">Adjust</span>
+                      </button>
+                    )}
+
                     {!sess.completed && (
                       <button
                         onClick={() => onStartFocus(sess.id, sess.subjectId)}

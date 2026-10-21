@@ -31,7 +31,9 @@ export function SettingsView() {
 
   const [displayName, setDisplayName] = useState(data.profile.displayName);
   const [semesterName, setSemesterName] = useState(data.profile.semesterName);
-  const [dailyHours, setDailyHours] = useState(data.profile.dailyAvailabilityHours);
+  const [dailyHours, setDailyHours] = useState(
+    data.profile.preferences?.dailyAvailabilityHours || data.profile.dailyAvailabilityHours || 4
+  );
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [resetType, setResetType] = useState<'sample' | 'empty'>('sample');
 
@@ -43,6 +45,10 @@ export function SettingsView() {
       displayName,
       semesterName,
       dailyAvailabilityHours: Number(dailyHours),
+      preferences: {
+        ...data.profile.preferences,
+        dailyAvailabilityHours: Number(dailyHours),
+      },
     });
   };
 

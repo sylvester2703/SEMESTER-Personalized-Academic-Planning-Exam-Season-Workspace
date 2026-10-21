@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { PlannerProvider, usePlanner } from '@/lib/context/planner-context';
 import { AppHeader } from '@/components/navigation/app-header';
+import { AppFooter } from '@/components/navigation/app-footer';
 import { LandingView } from '@/components/landing/landing-view';
 import { DashboardView } from '@/components/dashboard/dashboard-view';
 import { TimetableView } from '@/components/timetable/timetable-view';
@@ -16,11 +17,16 @@ import { SessionModal } from '@/components/modals/session-modal';
 import { SubjectModal } from '@/components/modals/subject-modal';
 import { TopicModal } from '@/components/modals/topic-modal';
 import { SuggestPlanModal } from '@/components/modals/suggest-plan-modal';
+import { PdfExportModal } from '@/components/modals/pdf-export-modal';
+import { WhatToStudyModal } from '@/components/assistant/what-to-study-modal';
+import { MissedSessionModal } from '@/components/modals/missed-session-modal';
+import { ActiveRecallModal } from '@/components/recall/active-recall-modal';
 import { ToastContainer } from '@/components/shared/toast-container';
 import { StudySession, Subject, Topic } from '@/types';
 
 function PlannerApp() {
   const {
+    data,
     activeView,
     setActiveView,
     isOnboardingOpen,
@@ -41,6 +47,15 @@ function PlannerApp() {
   const [initialTopicSubjId, setInitialTopicSubjId] = useState<string | undefined>();
 
   const [suggestPlanModalOpen, setSuggestPlanModalOpen] = useState(false);
+
+  // New Feature Modals
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [whatToStudyOpen, setWhatToStudyOpen] = useState(false);
+  const [missedSessionModalOpen, setMissedSessionModalOpen] = useState(false);
+  const [sessionToRecover, setSessionToRecover] = useState<StudySession | null>(null);
+
+  const [activeRecallModalOpen, setActiveRecallModalOpen] = useState(false);
+  const [topicForRecall, setTopicForRecall] = useState<Topic | null>(null);
 
   // Handlers for opening modals
   const handleOpenNewSession = (date?: string, subjId?: string) => {
@@ -76,12 +91,24 @@ function PlannerApp() {
     setTopicModalOpen(true);
   };
 
+  const handleRecoverSession = (session: StudySession) => {
+    setSessionToRecover(session);
+    setMissedSessionModalOpen(true);
+  };
+
+  const handleOpenRecall = (topic: Topic) => {
+    setTopicForRecall(topic);
+    setActiveRecallModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-paper-100 dark:bg-paper-950 text-ink-900 dark:text-ink-50">
-      {/* Universal App Header */}
+      {/* Universal App Header with Brand Logo and Action Triggers */}
       <AppHeader
         onOpenNewSession={() => handleOpenNewSession()}
         onOpenNewSubject={handleOpenNewSubject}
+        onOpenPdfExport={() => setPdfModalOpen(true)}
+        onOpenWhatToStudy={() => setWhatToStudyOpen(true)}
       />
 
       {/* Main View Area */}
@@ -93,6 +120,9 @@ function PlannerApp() {
             onOpenNewSession={() => handleOpenNewSession()}
             onOpenNewSubject={handleOpenNewSubject}
             onOpenSuggestPlan={() => setSuggestPlanModalOpen(true)}
+            onOpenWhatToStudy={() => setWhatToStudyOpen(true)}
+            onOpenPdfExport={() => setPdfModalOpen(true)}
+            onRecoverSession={handleRecoverSession}
           />
         )}
 
@@ -117,6 +147,7 @@ function PlannerApp() {
             onOpenNewTopic={handleOpenNewTopic}
             onEditTopic={handleEditTopic}
             onOpenNewSubject={handleOpenNewSubject}
+            onOpenRecall={handleOpenRecall}
           />
         )}
 
@@ -130,6 +161,12 @@ function PlannerApp() {
 
         {activeView === 'settings' && <SettingsView />}
       </main>
+
+      {/* SEMESTER Brand Footer */}
+      <AppFooter
+        onOpenPdfExport={() => setPdfModalOpen(true)}
+        onOpenWhatToStudy={() => setWhatToStudyOpen(true)}
+      />
 
       {/* Floating notifications */}
       <ToastContainer />
@@ -165,6 +202,38 @@ function PlannerApp() {
       <SuggestPlanModal
         isOpen={suggestPlanModalOpen}
         onClose={() => setSuggestPlanModalOpen(false)}
+      />
+
+      <PdfExportModal
+        isOpen={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+      />
+
+      <WhatToStudyModal
+        isOpen={whatToStudyOpen}
+        onClose={() => setWhatToStudyOpen(false)}
+        onSelectTopicForFocus={(subjectId, topicId) => {
+          setActiveView('focus');
+        }}
+      />
+
+      <MissedSessionModal
+        isOpen={missedSessionModalOpen}
+        onClose={() => {
+          setMissedSessionModalOpen(false);
+          setSessionToRecover(null);
+        }}
+        session={sessionToRecover}
+      />
+
+      <ActiveRecallModal
+        isOpen={activeRecallModalOpen}
+        onClose={() => {
+          setActiveRecallModalOpen(false);
+          setTopicForRecall(null);
+        }}
+        topic={topicForRecall}
+        subject={data.subjects.find((s) => s.id === topicForRecall?.subjectId)}
       />
     </div>
   );

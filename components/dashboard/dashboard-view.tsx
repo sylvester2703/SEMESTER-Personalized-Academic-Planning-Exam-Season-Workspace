@@ -6,7 +6,9 @@ import { CountdownBanner } from './countdown-banner';
 import { SmartNextStepCard } from './smart-next-step';
 import { TodayPlan } from './today-plan';
 import { ReadinessOverview } from './readiness-overview';
+import { ExamDayMode } from '../exams/exam-day-mode';
 import { calculateWeeklyReview, calculateSubjectReadiness } from '@/lib/calculations';
+import { StudySession } from '@/types';
 import {
   Calendar,
   Sparkles,
@@ -17,18 +19,27 @@ import {
   BookOpen,
   Info,
   RefreshCw,
+  Compass,
+  FileDown,
+  HeartHandshake,
 } from 'lucide-react';
 
 interface DashboardViewProps {
   onOpenNewSession: () => void;
   onOpenNewSubject: () => void;
   onOpenSuggestPlan: () => void;
+  onOpenWhatToStudy?: () => void;
+  onOpenPdfExport?: () => void;
+  onRecoverSession?: (session: StudySession) => void;
 }
 
 export function DashboardView({
   onOpenNewSession,
   onOpenNewSubject,
   onOpenSuggestPlan,
+  onOpenWhatToStudy,
+  onOpenPdfExport,
+  onRecoverSession,
 }: DashboardViewProps) {
   const {
     data,
@@ -51,6 +62,9 @@ export function DashboardView({
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in-50 duration-200">
+      {/* Imminent Exam-Day Preparation Mode if exam within 48h */}
+      <ExamDayMode />
+
       {/* Sample Data Callout Banner if active */}
       {data.profile.isSampleData && (
         <div className="p-3.5 rounded-lg border border-amber-border/80 bg-amber-light/80 dark:bg-amber-950/30 dark:border-amber-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-950 dark:text-amber-200">
@@ -77,6 +91,30 @@ export function DashboardView({
         </div>
       )}
 
+      {/* Personalized Plan Explanation Statement */}
+      {data.profile.planExplanation && (
+        <div className="p-4 rounded-xl border border-forest/30 bg-forest/5 dark:bg-emerald-950/20 text-xs text-ink-800 dark:text-ink-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-2.5">
+            <Compass className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold uppercase tracking-wider text-forest dark:text-emerald-400 block text-[10px]">
+                Personalized Plan Rationale
+              </span>
+              <p className="leading-relaxed mt-0.5">{data.profile.planExplanation}</p>
+            </div>
+          </div>
+          {onOpenPdfExport && (
+            <button
+              onClick={onOpenPdfExport}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-forest hover:bg-forest-dark text-white font-medium text-xs shadow-2xs"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              <span>Download PDF</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Hero Exam Countdown */}
       <CountdownBanner
         subjects={data.subjects}
@@ -84,13 +122,30 @@ export function DashboardView({
         onViewSubject={(id) => setActiveView('exams')}
       />
 
-      {/* Answer question 4: What should I do next? */}
-      <SmartNextStepCard
-        subjects={data.subjects}
-        topics={data.topics}
-        sessions={data.sessions}
-        onActionClick={(view) => setActiveView(view)}
-      />
+      {/* Prominent Next Action & What should I study now? trigger */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-serif text-lg font-bold text-ink-950 dark:text-white">
+            Recommended Action
+          </h3>
+          {onOpenWhatToStudy && (
+            <button
+              onClick={onOpenWhatToStudy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-semibold shadow-2xs transition-all"
+            >
+              <Compass className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span>What should I study now?</span>
+            </button>
+          )}
+        </div>
+
+        <SmartNextStepCard
+          subjects={data.subjects}
+          topics={data.topics}
+          sessions={data.sessions}
+          onActionClick={(view) => setActiveView(view)}
+        />
+      </div>
 
       {/* At-a-glance calm metrics strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -162,6 +217,7 @@ export function DashboardView({
             }}
             onAddSession={onOpenNewSession}
             onViewTimetable={() => setActiveView('timetable')}
+            onRecoverMissedSession={onRecoverSession}
           />
         </div>
 

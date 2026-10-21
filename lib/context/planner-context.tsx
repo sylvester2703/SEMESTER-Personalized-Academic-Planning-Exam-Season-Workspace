@@ -10,6 +10,9 @@ import {
   UserProfile,
   TopicStatus,
   ConfidenceLevel,
+  RoutineCommitment,
+  PersonalGoal,
+  ExamDayChecklistItem,
 } from '@/types';
 import {
   loadAppData,
@@ -69,6 +72,27 @@ interface PlannerContextType {
 
   // Focus Actions
   recordFocusSession: (record: Omit<FocusRecord, 'id' | 'completedAt'>) => void;
+
+  // Routine Commitments
+  addRoutineCommitment: (commitment: Omit<RoutineCommitment, 'id'>) => void;
+  updateRoutineCommitment: (id: string, updates: Partial<RoutineCommitment>) => void;
+  deleteRoutineCommitment: (id: string) => void;
+
+  // Personal Goals
+  addGoal: (goal: Omit<PersonalGoal, 'id'>) => void;
+  updateGoal: (id: string, updates: Partial<PersonalGoal>) => void;
+  deleteGoal: (id: string) => void;
+  toggleMilestone: (goalId: string, milestoneId: string) => void;
+
+  // Exam Day Checklist
+  addChecklistItem: (item: Omit<ExamDayChecklistItem, 'id'>) => void;
+  toggleChecklistItem: (id: string) => void;
+  deleteChecklistItem: (id: string) => void;
+
+  // Adaptive Rescheduling & Recovery
+  rescheduleSession: (id: string, newDate: string, newStartTime: string, newEndTime: string) => void;
+  splitSession: (id: string, part1Minutes: number, part2Minutes: number, date2: string, start2: string, end2: string) => void;
+  markSessionMissed: (id: string) => void;
 
   // Profile / Settings
   updateProfile: (updates: Partial<UserProfile>) => void;
@@ -355,13 +379,255 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // ROUTINE COMMITMENT ACTIONS
+  const addRoutineCommitment = (commitmentInput: Omit<RoutineCommitment, 'id'>) => {
+    const newCommitment: RoutineCommitment = {
+      ...commitmentInput,
+      id: `comm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    };
+    setData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        routineCommitments: [...(prev.profile.routineCommitments || []), newCommitment],
+      },
+    }));
+    addToast({
+      type: 'success',
+      title: 'Routine commitment added',
+      description: `${newCommitment.name} (${newCommitment.startTime} - ${newCommitment.endTime})`,
+    });
+  };
+
+  const updateRoutineCommitment = (id: string, updates: Partial<RoutineCommitment>) => {
+    setData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        routineCommitments: (prev.profile.routineCommitments || []).map((c) =>
+          c.id === id ? { ...c, ...updates } : c
+        ),
+      },
+    }));
+  };
+
+  const deleteRoutineCommitment = (id: string) => {
+    setData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        routineCommitments: (prev.profile.routineCommitments || []).filter((c) => c.id !== id),
+      },
+    }));
+    addToast({
+      type: 'info',
+      title: 'Commitment removed',
+    });
+  };
+
+  // GOALS ACTIONS
+  const addGoal = (goalInput: Omit<PersonalGoal, 'id'>) => {
+    const newGoal: PersonalGoal = {
+      ...goalInput,
+      id: `goal-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    };
+    setData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        goals: [...(prev.profile.goals || []), newGoal],
+      },
+    }));
+    addToast({
+      type: 'success',
+      title: 'Study target defined',
+      description: newGoal.title,
+    });
+  };
+
+  const updateGoal = (id: string, updates: Partial<PersonalGoal>) => {
+    setData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        goals: (prev.profile.goals || []).map((g) => (g.id === id ? { ...g, ...updates } : g)),
+      },
+    }));
+  };
+
+  const deleteGoal = (id: string) => {
+    setData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        goals: (prev.profile.goals || []).filter((g) => g.id !== id),
+      },
+    }));
+    addToast({
+      type: 'info',
+      title: 'Goal removed',
+    });
+  };
+
+  const toggleMilestone = (goalId: string, milestoneId: string) => {
+    setData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        goals: (prev.profile.goals || []).map((g) => {
+          if (g.id !== goalId) return g;
+          const updatedMilestones = g.milestones.map((m) =>
+            m.id === milestoneId ? { ...m, completed: !m.completed } : m
+          );
+          const allCompleted = updatedMilestones.length > 0 && updatedMilestones.every((m) => m.completed);
+          return {
+            ...g,
+            milestones: updatedMilestones,
+            completed: allCompleted,
+          };
+        }),
+      },
+    }));
+  };
+
+  // EXAM CHECKLIST ACTIONS
+  const addChecklistItem = (itemInput: Omit<ExamDayChecklistItem, 'id'>) => {
+    const newItem: ExamDayChecklistItem = {
+      ...itemInput,
+      id: `chk-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    };
+    setData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        examChecklist: [...(prev.profile.examChecklist || []), newItem],
+      },
+    }));
+  };
+
+  const toggleChecklistItem = (id: string) => {
+    setData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        examChecklist: (prev.profile.examChecklist || []).map((c) =>
+          c.id === id ? { ...c, checked: !c.checked } : c
+        ),
+      },
+    }));
+  };
+
+  const deleteChecklistItem = (id: string) => {
+    setData((prev) => ({
+      ...prev,
+      profile: {
+        ...prev.profile,
+        examChecklist: (prev.profile.examChecklist || []).filter((c) => c.id !== id),
+      },
+    }));
+  };
+
+  // ADAPTIVE RESCHEDULING & RECOVERY
+  const rescheduleSession = (id: string, newDate: string, newStartTime: string, newEndTime: string) => {
+    const [startH, startM] = newStartTime.split(':').map(Number);
+    const [endH, endM] = newEndTime.split(':').map(Number);
+    const duration = endH * 60 + endM - (startH * 60 + startM);
+
+    setData((prev) => ({
+      ...prev,
+      sessions: prev.sessions.map((s) =>
+        s.id === id
+          ? {
+              ...s,
+              date: newDate,
+              startTime: newStartTime,
+              endTime: newEndTime,
+              durationMinutes: duration > 0 ? duration : s.durationMinutes,
+              missed: false,
+              rescheduledFrom: `${s.date} ${s.startTime}`,
+            }
+          : s
+      ),
+    }));
+
+    addToast({
+      type: 'success',
+      title: 'Session rescheduled',
+      description: `Moved to ${newDate} at ${newStartTime} without guilt.`,
+    });
+  };
+
+  const splitSession = (
+    id: string,
+    part1Minutes: number,
+    part2Minutes: number,
+    date2: string,
+    start2: string,
+    end2: string
+  ) => {
+    const target = data.sessions.find((s) => s.id === id);
+    if (!target) return;
+
+    const [startH, startM] = target.startTime.split(':').map(Number);
+    const newEndMin = startH * 60 + startM + part1Minutes;
+    const newEndTime = `${Math.floor(newEndMin / 60)
+      .toString()
+      .padStart(2, '0')}:${(newEndMin % 60).toString().padStart(2, '0')}`;
+
+    const part2Session: StudySession = {
+      id: `sess-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      subjectId: target.subjectId,
+      title: `${target.title} (Part 2)`,
+      date: date2,
+      startTime: start2,
+      endTime: end2,
+      durationMinutes: part2Minutes,
+      completed: false,
+      topicId: target.topicId,
+      rescheduledFrom: `${target.date} (Split)`,
+    };
+
+    setData((prev) => ({
+      ...prev,
+      sessions: [
+        ...prev.sessions.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                title: `${target.title} (Part 1)`,
+                endTime: newEndTime,
+                durationMinutes: part1Minutes,
+                missed: false,
+              }
+            : s
+        ),
+        part2Session,
+      ],
+    }));
+
+    addToast({
+      type: 'info',
+      title: 'Session split into two manageable blocks',
+      description: `Part 1 (${part1Minutes}m) today, Part 2 (${part2Minutes}m) on ${date2}.`,
+    });
+  };
+
+  const markSessionMissed = (id: string) => {
+    setData((prev) => ({
+      ...prev,
+      sessions: prev.sessions.map((s) => (s.id === id ? { ...s, missed: true } : s)),
+    }));
+  };
+
   const applySuggestedPlan = (options?: { replaceExisting?: boolean }) => {
     const suggested = generateSuggestedWeeklyPlan(
       data.subjects,
       data.topics,
-      data.profile.dailyAvailabilityHours,
+      data.profile.routineCommitments,
       new Date(),
-      7
+      7,
+      data.profile.preferences,
+      data.sessions.filter((s) => s.completed)
     );
 
     if (suggested.length === 0) {
@@ -373,10 +639,21 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setData((prev) => ({
-      ...prev,
-      sessions: options?.replaceExisting ? suggested : [...prev.sessions, ...suggested],
-    }));
+    setData((prev) => {
+      // If replaceExisting: preserve completed sessions and user custom sessions
+      const preserved = options?.replaceExisting
+        ? prev.sessions.filter((s) => s.completed || !s.isAutoGenerated)
+        : prev.sessions;
+
+      return {
+        ...prev,
+        sessions: [...preserved, ...suggested],
+        profile: {
+          ...prev.profile,
+          planExplanation: suggested.explanation || prev.profile.planExplanation,
+        },
+      };
+    });
 
     addToast({
       type: 'success',
@@ -445,6 +722,19 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         deleteSession,
         toggleSessionComplete,
         recordFocusSession,
+        addRoutineCommitment,
+        updateRoutineCommitment,
+        deleteRoutineCommitment,
+        addGoal,
+        updateGoal,
+        deleteGoal,
+        toggleMilestone,
+        addChecklistItem,
+        toggleChecklistItem,
+        deleteChecklistItem,
+        rescheduleSession,
+        splitSession,
+        markSessionMissed,
         updateProfile,
         applySuggestedPlan,
         resetAllData,

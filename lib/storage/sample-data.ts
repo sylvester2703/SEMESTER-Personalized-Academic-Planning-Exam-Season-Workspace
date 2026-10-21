@@ -1,5 +1,15 @@
 import { addDays, format, subDays } from 'date-fns';
-import { AppData, Subject, Topic, StudySession, FocusRecord, AvailabilitySlot } from '@/types';
+import {
+  AppData,
+  Subject,
+  Topic,
+  StudySession,
+  FocusRecord,
+  RoutineCommitment,
+  StudyPreferences,
+  PersonalGoal,
+  ExamDayChecklistItem,
+} from '@/types';
 
 export function generateSampleData(baseDate: Date = new Date()): AppData {
   const dateStr = (offset: number) => format(addDays(baseDate, offset), 'yyyy-MM-dd');
@@ -380,32 +390,139 @@ export function generateSampleData(baseDate: Date = new Date()): AppData {
     },
   ];
 
-  const availability: AvailabilitySlot[] = [
-    { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', preferredHours: 4 }, // Monday
-    { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', preferredHours: 4 }, // Tuesday
-    { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', preferredHours: 4 }, // Wednesday
-    { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', preferredHours: 4 }, // Thursday
-    { dayOfWeek: 5, startTime: '09:00', endTime: '18:00', preferredHours: 4 }, // Friday
-    { dayOfWeek: 6, startTime: '10:00', endTime: '16:00', preferredHours: 3 }, // Saturday
-    { dayOfWeek: 0, startTime: '11:00', endTime: '17:00', preferredHours: 2.5 }, // Sunday
+  const routineCommitments: RoutineCommitment[] = [
+    // Weekday College: Mon - Fri 09:00 - 16:00 (Fixed)
+    {
+      id: 'comm-college',
+      name: 'College Lectures & Labs',
+      category: 'college',
+      daysOfWeek: [1, 2, 3, 4, 5],
+      startTime: '09:00',
+      endTime: '16:00',
+      isFixed: true,
+      notes: 'Main campus, Computer Science & Engineering department.',
+    },
+    // Weekday Commute: Mon - Fri morning & afternoon (Fixed)
+    {
+      id: 'comm-commute-morn',
+      name: 'Morning Commute to Campus',
+      category: 'commute',
+      daysOfWeek: [1, 2, 3, 4, 5],
+      startTime: '08:00',
+      endTime: '09:00',
+      isFixed: true,
+      notes: 'Metro & campus shuttle. Light flashcards review on train.',
+    },
+    {
+      id: 'comm-commute-eve',
+      name: 'Evening Commute Home',
+      category: 'commute',
+      daysOfWeek: [1, 2, 3, 4, 5],
+      startTime: '16:00',
+      endTime: '17:00',
+      isFixed: true,
+      notes: 'Metro transit.',
+    },
+    // Daily Sleep: 23:00 - 07:00 (Fixed)
+    {
+      id: 'comm-sleep',
+      name: 'Sleep & Night Rest',
+      category: 'sleep',
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+      startTime: '23:00',
+      endTime: '07:00',
+      isFixed: true,
+      notes: 'Non-negotiable sleep schedule for cognitive consolidation.',
+    },
+    // Daily Dinner & Family: 19:30 - 20:30 (Fixed)
+    {
+      id: 'comm-dinner',
+      name: 'Dinner & Relaxation',
+      category: 'meals',
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+      startTime: '19:30',
+      endTime: '20:30',
+      isFixed: true,
+    },
+    // Saturday Sports / Exercise (Flexible)
+    {
+      id: 'comm-sports',
+      name: 'Badminton / Gym Workout',
+      category: 'exercise',
+      daysOfWeek: [6],
+      startTime: '16:00',
+      endTime: '17:30',
+      isFixed: false,
+      notes: 'Physical recovery and stress relief.',
+    },
+  ];
+
+  const preferences: StudyPreferences = {
+    dailyAvailabilityHours: 3.5,
+    preferredSessionDuration: 45,
+    sessionPacing: 'short_frequent',
+    preferredTimeOfDay: 'evening',
+    breakFrequencyMinutes: 45,
+    prioritizationStrategy: 'nearest_exam',
+    lighterDays: [0], // Sunday is lighter
+  };
+
+  const goals: PersonalGoal[] = [
+    {
+      id: 'goal-1',
+      title: 'Finish Distributed Systems & Cloud syllabus with 2 full revisions',
+      targetDate: dateStr(7),
+      category: 'finish_syllabus',
+      completed: false,
+      milestones: [
+        { id: 'm-1', title: 'Solidify Raft consensus & log replication proofs', completed: true },
+        { id: 'm-2', title: 'Complete 2PC failure diagrams & recovery scenarios', completed: false, dueDate: dateStr(2) },
+        { id: 'm-3', title: 'Full past paper timed mock under exam conditions', completed: false, dueDate: dateStr(6) },
+      ],
+    },
+    {
+      id: 'goal-2',
+      title: 'Master Markov Chains transition matrices in Probability',
+      targetDate: dateStr(12),
+      category: 'nearest_exam',
+      completed: false,
+      milestones: [
+        { id: 'm-4', title: 'Review stationary distribution derivations', completed: true },
+        { id: 'm-5', title: 'Solve 10 Chapman-Kolmogorov problems from textbook', completed: false, dueDate: dateStr(4) },
+      ],
+    },
+  ];
+
+  const examChecklist: ExamDayChecklistItem[] = [
+    { id: 'chk-1', subjectId: 'subj-cs301', category: 'stationery', text: 'Non-programmable calculator with fresh batteries', checked: true },
+    { id: 'chk-2', subjectId: 'subj-cs301', category: 'logistics', text: 'Physical student university ID card & stamped admit card', checked: true },
+    { id: 'chk-3', subjectId: 'subj-cs301', category: 'concepts', text: 'Final scan of Raft leader election heartbeat timeouts (150-300ms)', checked: false },
+    { id: 'chk-4', subjectId: 'subj-math204', category: 'stationery', text: 'Official 1-page double-sided handwritten formula reference', checked: false },
+    { id: 'chk-5', subjectId: 'subj-math204', category: 'logistics', text: 'Extra black gel pens, ruler, and water bottle', checked: true },
   ];
 
   return {
     version: 1,
     profile: {
       displayName: 'Alex Chen',
+      academicYearOrLevel: 'Year 3, Undergraduate Computer Engineering',
       semesterName: 'Final Semester Examinations • Spring 2026',
+      primaryGoalDescription: 'Finish all syllabus units and score an A in Distributed Systems while maintaining balanced sleep and college hours.',
       targetExamPeriod: 'April 2026',
-      dailyAvailabilityHours: 3.5,
       theme: 'system',
       onboarded: true,
       isSampleData: true,
+      routineCommitments,
+      preferences,
+      goals,
+      examChecklist,
+      planExplanation:
+        'Your plan was built around your college hours (9 AM – 4 PM), morning & evening commutes, and preferred evening study periods. Distributed Systems (CS 301) has been prioritized because its exam is in 8 days and 3 topics still require revision.',
       createdAt: pastDateStr(30),
     },
     subjects,
     topics,
     sessions,
     focusRecords,
-    availability,
   };
 }

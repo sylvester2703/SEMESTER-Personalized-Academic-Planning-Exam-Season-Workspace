@@ -18,14 +18,23 @@ import {
   Sparkles,
   ArrowRight,
   BookOpen,
+  FileDown,
+  Compass,
 } from 'lucide-react';
 
 interface AppHeaderProps {
   onOpenNewSession?: () => void;
   onOpenNewSubject?: () => void;
+  onOpenPdfExport?: () => void;
+  onOpenWhatToStudy?: () => void;
 }
 
-export function AppHeader({ onOpenNewSession, onOpenNewSubject }: AppHeaderProps) {
+export function AppHeader({
+  onOpenNewSession,
+  onOpenNewSubject,
+  onOpenPdfExport,
+  onOpenWhatToStudy,
+}: AppHeaderProps) {
   const {
     data,
     activeView,
@@ -63,24 +72,31 @@ export function AppHeader({ onOpenNewSession, onOpenNewSubject }: AppHeaderProps
     <header className="sticky top-0 z-40 bg-paper-100/90 dark:bg-paper-950/90 backdrop-blur-md border-b border-paper-300/80 dark:border-paper-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Brand Wordmark */}
-          <div className="flex items-center gap-6">
+          {/* Brand Wordmark with Vector Geometric Mark */}
+          <div className="flex items-center gap-5">
             <button
               onClick={() => setActiveView('landing')}
-              className="text-left group flex items-baseline gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest rounded-sm"
+              className="text-left group flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest rounded-sm"
               aria-label="SEMESTER home"
             >
-              <span className="font-serif text-2xl font-semibold tracking-tight text-ink-950 dark:text-white group-hover:text-forest transition-colors">
-                SEMESTER
-              </span>
-              <span className="hidden sm:inline-block text-[11px] uppercase tracking-widest text-ink-500 dark:text-ink-400 font-medium border-l border-paper-300 dark:border-paper-800 pl-2.5">
-                Exam Planner
-              </span>
+              <div className="flex items-end gap-1 h-5 shrink-0">
+                <span className="w-1.5 h-3.5 rounded-xs bg-forest dark:bg-emerald-500 group-hover:scale-y-110 transition-transform" />
+                <span className="w-1.5 h-5 rounded-xs bg-forest dark:bg-emerald-500 group-hover:scale-y-110 transition-transform" />
+                <span className="w-1.5 h-2.5 rounded-xs bg-amber-warm dark:bg-amber-400 group-hover:scale-y-110 transition-transform" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-serif text-2xl font-bold tracking-tight text-ink-950 dark:text-white group-hover:text-forest transition-colors">
+                  SEMESTER
+                </span>
+                <span className="hidden sm:inline-block text-[10px] uppercase tracking-widest text-ink-500 dark:text-ink-400 font-semibold border-l border-paper-300 dark:border-paper-800 pl-2">
+                  Academic Planner
+                </span>
+              </div>
             </button>
 
-            {/* Desktop Navigation Tabs (when in workspace) */}
+            {/* Desktop Navigation Tabs */}
             {activeView !== 'landing' && (
-              <nav className="hidden lg:flex items-center gap-1 ml-2" aria-label="Main Navigation">
+              <nav className="hidden lg:flex items-center gap-1 ml-1" aria-label="Main Navigation">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeView === item.view;
@@ -88,7 +104,7 @@ export function AppHeader({ onOpenNewSession, onOpenNewSubject }: AppHeaderProps
                     <button
                       key={item.view}
                       onClick={() => handleNavClick(item.view)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
                         isActive
                           ? 'bg-paper-200 dark:bg-paper-800 text-forest dark:text-emerald-400 font-semibold shadow-subtle'
                           : 'text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-ink-100 hover:bg-paper-200/50 dark:hover:bg-paper-900'
@@ -104,24 +120,25 @@ export function AppHeader({ onOpenNewSession, onOpenNewSubject }: AppHeaderProps
           </div>
 
           {/* Right Action Bar */}
-          <div className="flex items-center gap-2.5">
-            {/* Sample data badge indicator */}
-            {data.profile.isSampleData && activeView !== 'landing' && (
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-light dark:bg-amber-950/40 border border-amber-border dark:border-amber-700/40 text-[11px] text-amber-badge dark:text-amber-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-warm animate-pulse" />
-                <span>Sample Data Active</span>
-              </div>
-            )}
-
+          <div className="flex items-center gap-2">
             {/* If on Landing page */}
             {activeView === 'landing' ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => setActiveView('dashboard')}
                   className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-ink-700 dark:text-ink-300 hover:text-forest dark:hover:text-emerald-400 transition-colors px-2 py-1"
                 >
                   <span>Open planner</span>
                 </button>
+                {onOpenPdfExport && (
+                  <button
+                    onClick={onOpenPdfExport}
+                    className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-800 dark:text-ink-200 text-xs font-medium hover:border-forest transition-all"
+                  >
+                    <FileDown className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />
+                    <span>Download PDF</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setIsOnboardingOpen(true)}
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-forest"
@@ -132,23 +149,37 @@ export function AppHeader({ onOpenNewSession, onOpenNewSubject }: AppHeaderProps
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                {/* Switch back to Landing */}
-                <button
-                  onClick={() => setActiveView('landing')}
-                  className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-ink-100 hover:bg-paper-200/60 transition-colors"
-                  title="View overview & documentation"
-                >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>Overview</span>
-                </button>
+                {/* Assistant Trigger Button */}
+                {onOpenWhatToStudy && (
+                  <button
+                    onClick={onOpenWhatToStudy}
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-semibold transition-all shadow-2xs"
+                    title="Calculate next best study task"
+                  >
+                    <Compass className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Study Now?</span>
+                  </button>
+                )}
+
+                {/* PDF Planner Download Button */}
+                {onOpenPdfExport && (
+                  <button
+                    onClick={onOpenPdfExport}
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-850 hover:border-forest text-ink-800 dark:text-ink-200 text-xs font-medium shadow-2xs transition-all"
+                    title="Download printable study planner PDF"
+                  >
+                    <FileDown className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />
+                    <span>Download PDF</span>
+                  </button>
+                )}
 
                 {/* Quick Add Session Button */}
                 {onOpenNewSession && (
                   <button
                     onClick={onOpenNewSession}
-                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-subtle transition-all"
+                    className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-subtle transition-all"
                   >
-                    <span>+ New Session</span>
+                    <span>+ Session</span>
                   </button>
                 )}
               </div>
@@ -227,6 +258,32 @@ export function AppHeader({ onOpenNewSession, onOpenNewSubject }: AppHeaderProps
             })}
 
             <div className="mt-3 pt-3 border-t border-paper-300 dark:border-paper-800 flex flex-col gap-2">
+              {onOpenWhatToStudy && (
+                <button
+                  onClick={() => {
+                    onOpenWhatToStudy();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-amber-500/10 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-sm font-semibold"
+                >
+                  <Compass className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>What should I study now?</span>
+                </button>
+              )}
+
+              {onOpenPdfExport && (
+                <button
+                  onClick={() => {
+                    onOpenPdfExport();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-850 text-ink-800 dark:text-ink-200 text-sm font-medium"
+                >
+                  <FileDown className="w-4 h-4 text-forest dark:text-emerald-400" />
+                  <span>Download Study Planner (PDF)</span>
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   setIsOnboardingOpen(true);

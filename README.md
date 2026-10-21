@@ -1,147 +1,396 @@
-# SEMESTER — Exam Season Planner
+# SEMESTER — Personalized Academic Planning & Exam Season Workspace
 
-> **"Make a plan. Find your focus. Walk in prepared."**
-> 
-> *A production-quality, frontend-only academic planning and exam preparation workspace built for the SASC PixelRush UI/UX Build Challenge.*
+> **"Your routine. Your subjects. Your goals. Your semester, planned around you."**
+>
+> *Make a plan. Find your focus. Walk in prepared.*
+>
+> A production-quality, frontend-only academic planning and exam preparation workspace built for university and college students facing exam season stress.
 
----
-
-## 1. Product Overview
-
-**SEMESTER** transforms the overwhelming stress of university examinations into a structured, calm, and actionable journey. Designed with a warm editorial aesthetic inspired by contemporary journals, digital magazines, and premium stationery, SEMESTER consolidates exam schedules, syllabus readiness, daily study sessions, Pomodoro focus blocks, and weekly reviews into one unified workspace.
-
-### Key Highlights
-- **100% Client-Side & Local-First**: Zero backend servers, zero database setup, zero cookies, zero external tracking. Your data belongs entirely to your device.
-- **Explainable Heuristics, No Fake AI**: Practical, transparent algorithms calculate live countdowns, syllabus readiness, and conflict-free study allocations.
-- **Editorial Design System**: Warm paper canvas (`#F7F5EF`), deep ink typography (`#202722`), restrained forest-green accents (`#2D5541`), subtle amber tags (`#D99B38`), and tabular numerals for timekeeping.
-- **Free for Students**: No subscription tiers, no paywalls, and no account barriers.
+[![Vercel Deployment Ready](https://img.shields.io/badge/Vercel-Deployment%20Ready-black?logo=vercel)](https://vercel.com)
+[![Next.js 15](https://img.shields.io/badge/Next.js-15%20App%20Router-black?logo=next.js)](https://nextjs.org)
+[![TypeScript Strict](https://img.shields.io/badge/TypeScript-Strict%20Mode-blue?logo=typescript)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-Vanilla%20Tokens-38B2AC?logo=tailwind-css)](https://tailwindcss.com)
+[![Client-Side Only](https://img.shields.io/badge/Backend-Zero%20Servers%20%7C%20100%25%20Local-2D5541)](#local-first-data-architecture)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 
-## 2. Core Features
+## 1. Core Product Principle
 
-### A. Live Exam Countdown
-- Real-time countdown clock with tabular numerals (Days, Hours, Minutes, Seconds).
-- Context-sensitive reassuring messages based on urgency (e.g. *“2 weeks remaining. Plenty of runway for structured, bite-sized revision.”*).
-- Explicit disclosure of user device timezone.
-- Automatic roll-forward to the next upcoming examination once an exam concludes.
+**SEMESTER** is a user-input-driven, personalized academic planning application — not a static dashboard that displays the same sample timetable to everyone.
 
-### B. Smart Next Step Recommendation Engine
-- Deterministic, explainable recommendation system derived strictly from local calendar state.
-- Detects imminent exams with unfinished syllabus units, scheduled sessions due today, or schedule gaps.
-- Explains *why* the suggestion appears, with an immediate single-click action path.
+Every student's life is different: some attend university lectures 9 AM to 4 PM, some commute 2 hours a day, some work part-time jobs or attend weekend tuitions, and some have distinct study preferences such as evening deep-focus blocks or morning reviews.
 
-### C. Conflict-Free Timetable Builder
-- Dual calendar views: 7-day week grid for desktop and clean day-by-day agenda for mobile.
-- Real-time overlap and conflict detection for concurrent study sessions.
-- Direct check-off completion toggle with instant feedback toast notifications.
-- Integrated **Realistic Weekly Planner Assistant**: Generates balanced 7-day study slots respecting student-declared daily hours and buffer breaks.
+SEMESTER understands each student's actual routine, academic workload, upcoming examinations, subject difficulty, syllabus progress, and personal goals before generating a suggested study plan.
 
-### D. Syllabus Readiness Map
-- Subject-level breakdown of syllabus units and lecture topics.
-- 4 transparent status states: **Not started**, **Learning**, **Needs revision**, and **Confident**.
-- Honest readiness percentage formula: `(Confident Topics / Total Topics) × 100%`.
-- Topic filtering, inline edits, and direct focus launchers.
+The central principle is:
+> **"Your routine. Your subjects. Your goals. Your semester, planned around you."**
 
-### E. Distraction-Free Focus Mode
-- Built-in study timer with 25-minute Deep Focus, 5-minute Short Break, and 15-minute Long Break presets.
+The application works **entirely on the frontend** using local browser storage (`localStorage`) for persistence. No backend, no paid API keys, and no login barriers are required.
+
+---
+
+## 2. Comprehensive System Architecture
+
+```
+                                  ┌──────────────────────────────────────────────────┐
+                                  │           SEMESTER Web Application               │
+                                  │      (Next.js 15 App Router + React 19)          │
+                                  └────────────────────────┬─────────────────────────┘
+                                                           │
+                                                           ▼
+             ┌────────────────────────────────────────────────────────────────────────────────────────┐
+             │                               PlannerContextProvider                                   │
+             │           Single source of truth: Profile, Subjects, Topics, Sessions, Goals           │
+             └──────┬──────────────────────┬────────────────────────┬──────────────────────┬──────────┘
+                    │                      │                        │                      │
+                    ▼                      ▼                        ▼                      ▼
+         ┌───────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐ ┌───────────────────┐
+         │ 5-Step Onboarding │  │ Deterministic       │  │ Student-Centred     │ │ Print-Ready PDF   │
+         │ Wizard            │  │ Scheduling Engine   │  │ Intelligence Engine │ │ Generator         │
+         │                   │  │                     │  │                     │ │                   │
+         │ • Profile & Goals │  │ • Routine Inversion │  │ • What to study now │ │ • Vector Logo     │
+         │ • Routine Builder │  │ • Zero Collisions   │  │ • Missed Recovery   │ │ • 5 Export Types  │
+         │ • Subject/Syllabus│  │ • Proximity Weight  │  │ • Active Recall     │ │ • Clean Layout    │
+         │ • Preferences     │  │ • Lighter Days      │  │ • Workload Check    │ │ • A4 & Mobile     │
+         │ • Feasibility Chk │  │ • Human Reasoning   │  │ • Exam Day Mode     │ │ • Dynamic Year    │
+         └───────────────────┘  └─────────────────────┘  └─────────────────────┘ └───────────────────┘
+                    │                      │                        │                      │
+                    └──────────────────────┴───────────┬────────────┴──────────────────────┘
+                                                       │
+                                                       ▼
+                                     ┌────────────────────────────────────┐
+                                     │     Local-First Storage Engine     │
+                                     │  • Typed, versioned localStorage   │
+                                     │  • Corrupted data self-healing     │
+                                     │  • JSON Export & Validated Import  │
+                                     │  • 100% Client-Side Data Privacy   │
+                                     └────────────────────────────────────┘
+```
+
+---
+
+## 3. Key Feature Walkthrough
+
+### 3.1 Personal Planning Onboarding (5 Steps)
+
+When a student selects **"Build my study plan"**, SEMESTER initiates a calm, multi-step conversational onboarding experience:
+
+1. **Step 1: Understand the Student**
+   - Collects preferred name, academic level or year, primary semester objective, and optional target topics per week.
+2. **Step 2: Build the Daily Routine**
+   - Weekly timetable grid allowing students to enter wake-up/bedtimes, fixed college/university hours (e.g. Mon–Fri 9:00–16:00), commute blocks, meals, tuitions, gym/exercise, and personal commitments.
+   - Differentiates weekday vs. weekend routines.
+   - Enforces **Flexible vs. Fixed** commitment tags: fixed commitments are strictly protected and *never* overwritten by study sessions.
+   - Real-time time range validation and overlap detection.
+3. **Step 3: Add Subjects and Examinations**
+   - Unlimited subject creation with short code, exam date, exam time, syllabus topics, preparation level (*Not started*, *Beginner*, *In progress*, *Well prepared*), difficulty (*Easy*, *Moderate*, *Difficult*), and priority.
+   - Direct unit and topic entry with estimated study minutes.
+4. **Step 4: Understand Study Preferences**
+   - Realistic daily study hours limit (averts burnout).
+   - Preferred session duration (25m, 45m, 60m, 90m).
+   - Session pacing (*Short & frequent* vs. *Longer deep blocks*).
+   - Preferred time of day (*Morning*, *Afternoon*, *Evening*, *Night*).
+   - Break intervals and customizable **lighter study days** (e.g. lighter load on Sundays).
+5. **Step 5: Define a Clear Goal & Plan Preview**
+   - Choose from structured goals (*Finish syllabus before exam*, *Revise twice*, *Daily consistency*, *Nearest exam blitz*) or custom goals with target dates.
+   - Transparent summary breakdown and feasibility assessment before generating the schedule.
+
+---
+
+### 3.2 Deterministic, Collision-Free Scheduling Engine
+
+SEMESTER uses a transparent, rule-based scheduling algorithm located in [`lib/scheduling/index.ts`](file:///c:/Users/Dell/OneDrive/Desktop/SEMESTER/lib/scheduling/index.ts).
+
+**Scheduling Rules:**
+1. **Routine Inversion (`getAvailableFreeIntervals`)**: Genuinely available free slots are extracted by calculating mathematical intervals around fixed college hours, commute, sleep, meals, and other commitments.
+2. **Strict Non-Collision**: Never schedules over college, sleep, meals, or other fixed blocks.
+3. **Multi-Factor Priority Scoring**: Weights subjects by days until examination, unfinished topic count, difficulty multipliers, and user-assigned priority.
+4. **Human Availability Window**: Aligns study sessions with the student's declared preferred time of day (e.g. evening slots from 17:00–21:00) while respecting lighter days.
+5. **Preserves Completed Sessions**: Regenerating a schedule leaves already completed sessions untouched.
+6. **Feasibility Warnings**: Automatically raises a clear warning if the student's syllabus workload exceeds physically available study hours.
+7. **Personalized Explanations**: Generates a human-readable statement explaining why specific subjects are scheduled (e.g., *"Your plan was built around your college hours (09:00–16:00), preferred evening study sessions, and upcoming examinations. Database Management Systems was prioritised because its exam is in 10 days and 5 topics still need revision."*).
+
+---
+
+### 3.3 Student-Centred Intelligence Modules
+
+SEMESTER avoids gimmicky "AI" marketing and provides practical, local deterministic intelligence:
+
+#### A. "What should I study now?" Personal Study Assistant
+- Prominent one-click button in the header and dashboard.
+- Evaluates the student's real-time clock, current free time window before the next fixed commitment, upcoming exam proximity, and unfinished syllabus units.
+- Recommends **one primary task** and **one alternative task** with exact durations, rationale, and a direct button to launch the focus timer.
+
+#### B. Guilt-Free Missed-Session Recovery
+- Missed study sessions are treated as scheduling puzzles, not personal failures.
+- Offers 4 supportive recovery paths without guilt:
+  1. *Reschedule to next available slot* (checks for conflicts).
+  2. *Split into two smaller sessions*.
+  3. *Move to a selected day*.
+  4. *Mark as no longer necessary or dismiss*.
+- Never overloads the next day automatically.
+
+#### C. Spaced Revision & Active Recall Tester
+- Spaced review system with customizable intervals:
+  - **Difficult** (1-day follow-up)
+  - **Okay** (3-day follow-up)
+  - **Easy** (7-day follow-up)
+- Built-in retrieval practice modal: prompts the student to recall topic concepts from memory before rating recall ease, automatically scheduling the next review date.
+
+#### D. Syllabus Workload Estimator
+- Aggregates topic statuses (*Not started*, *Learning*, *Needs revision*, *Confident*).
+- Compares estimated remaining study hours with the student's actual available hours before each exam.
+- Highlights realistic feasibility: alerts students early if they are overcommitted so they can adjust priorities before panic sets in.
+
+#### E. Exam-Day Preparation Mode
+- Automatically triggers when an exam is scheduled for today or within the next 48 hours.
+- Displays a dedicated countdown, exam start time, location/hall, remaining critical concepts, and a dismissible checklist (stationery, hall ticket, calculator, formula sheet).
+- After the exam concludes, prompts the student to archive the exam while preserving historical study records.
+
+#### F. Distraction-Free Focus Timer
+- 25-minute Deep Focus, 5-minute Short Break, and 15-minute Long Break presets.
 - Gentle harmonic academic chime synthetically generated via standard browser Web Audio API (100% offline, zero audio asset dependencies).
-- Tab visibility and browser suspension reconciliation to ensure elapsed time is never lost when switching tabs.
-- Automatic logging of completed focus intervals into Weekly Review study totals.
-
-### F. Weekly Review & Study Insights
-- Aggregates planned sessions, completed sessions, focus hours, and pending/missed tasks.
-- Subject-wise proportional revision allocation charts.
-- Accessible tabular data alternative for assistive technologies.
-- One-click action to generate the next week’s plan.
-
-### G. Local Data Portability & Settings
-- JSON Backup Export and validated JSON Import with schema versioning.
-- Safe data reset controls: restore university sample dataset or wipe to a clean slate.
-- Light (Warm Paper) and Dark (Deep Ink) theme toggle with system preference support.
+- Tab visibility and browser suspension reconciliation to ensure elapsed time is never lost when switching tabs or waking a laptop.
 
 ---
 
-## 3. Technology Stack
+### 3.4 Print-Ready PDF Study Planner & Brand Identity
 
-- **Framework**: Next.js 15 (App Router, React 19)
-- **Language**: TypeScript (Strict Mode)
-- **Styling**: Tailwind CSS & Vanilla CSS Design Tokens
-- **Icons**: Lucide React
-- **Date Arithmetic**: date-fns
-- **Persistence**: Typed, versioned browser localStorage with graceful recovery
-- **Audio**: Web Audio API (synthetic sine wave harmonized chime)
+A client-side PDF generation engine built with `jspdf` and `jspdf-autotable` ([`lib/pdf/generate-pdf.ts`](file:///c:/Users/Dell/OneDrive/Desktop/SEMESTER/lib/pdf/generate-pdf.ts)):
+
+- **Original Geometric Vector Logo**: Clean, vector-drawn SEMESTER calendar mark rendered sharply at any print scale.
+- **5 Dedicated Export Presets**:
+  1. **Full Exam Season Planner**: Complete multi-page booklet featuring editorial cover page, personalized planning statement, exam calendar & priorities, weekly timetable grid, and syllabus tracker.
+  2. **Weekly Timetable**: Streamlined 7-day schedule grid for quick desk reference.
+  3. **Daily Study Sheet**: Single-day checklist format with session time blocks and handwritten notes area.
+  4. **Exam Countdown & Revision Plan**: Chronological exam list with days remaining, urgent topics, and target dates.
+  5. **Printable Revision Tracker**: Comprehensive checklist of all syllabus topics with status indicators and checkboxes.
+- **Document Formatting Quality**:
+  - Consistent warm ivory and forest-green styling.
+  - Tabular numerals for dates and durations.
+  - Text auto-wrapping with zero clipping or awkward pagination breaks.
+  - Running headers, page numbering (*"Page X of Y"*), and dynamic year copyright (`© 2026 SEMESTER · All rights reserved.`).
+  - Optional personalized footer: *"Prepared for personal study by [Name] · SEMESTER"*.
 
 ---
 
-## 4. Getting Started Locally
+## 4. Local-First Data Architecture & Privacy
+
+SEMESTER operates under strict data sovereignty principles:
+
+- **100% Client-Side**: No user data, routine hours, grades, or notes are transmitted to any server or remote database.
+- **LocalStorage Persistence**: Uses typed, versioned local storage schema (`semester_planner_data_v2`).
+- **Resilient Fallback**: Corrupted or missing storage states automatically heal by initializing a clean, safe state with graceful notification.
+- **Full Data Portability**:
+  - **Export JSON Backup**: Download a complete snapshot of all routines, subjects, topics, sessions, and preferences.
+  - **Validated JSON Import**: Upload backup files with schema validation to restore or transfer plans between browsers.
+  - **Clean Slate / Sample Data Reset**: Switch between clean blank state and comprehensive university sample data anytime.
+
+---
+
+## 5. Visual Design & Accessibility
+
+- **Editorial Color Palette**:
+  - Warm Paper Canvas: `#F7F5EF` / Dark Canvas: `#181F1A`
+  - Deep Ink Typography: `#202722` / Light Typography: `#F0EFEA`
+  - Forest Green Accent: `#2D5541` (Focus, Success, Brand)
+  - Subtle Sage: `#5A7365` (Secondary info, borders)
+  - Warm Amber: `#D99B38` (Exam urgency, active recall)
+- **Typography**: Editorial serif headings (`Newsreader`) paired with clean sans-serif body text (`Inter`) and tabular figures (`font-variant-numeric: tabular-nums`) for jitter-free countdowns.
+- **Responsive Layout**: Tested across mobile (320px, 375px, 430px), tablet (768px), and desktop (1024px, 1440px) viewports with dedicated day agenda views and touch drawers.
+- **Accessibility (WCAG 2.1 AA)**:
+  - Visible focus indicators on all interactive controls.
+  - Full keyboard navigation and dialog focus trapping.
+  - ARIA attributes (`role="dialog"`, `aria-modal="true"`, `aria-label`).
+  - Color contrast ratios exceed 4.5:1.
+  - `prefers-reduced-motion` support for smooth transitions.
+
+---
+
+## 6. Technology Stack
+
+| Layer | Technology | Rationale |
+| :--- | :--- | :--- |
+| **Framework** | Next.js 15 (App Router, React 19) | Server-safe modern client components, optimal bundle splitting |
+| **Language** | TypeScript 5 (Strict Mode) | Full compile-time type safety across data schemas and calculations |
+| **Styling** | Tailwind CSS + Vanilla CSS Tokens | Editorial design system with unified dark/light theme tokens |
+| **Icons** | Lucide React | Lightweight, consistent vector iconography |
+| **Date Arithmetic** | `date-fns` | Functional, tree-shakeable calendar and interval calculations |
+| **PDF Generation** | `jspdf` + `jspdf-autotable` | 100% client-side vector document generation, zero server dependencies |
+| **Audio** | HTML5 Web Audio API | Synthetic sine-wave harmonic chime (zero external audio files) |
+| **Persistence** | Browser `localStorage` | Zero backend, instant load, total offline privacy |
+
+---
+
+## 7. Getting Started Locally
 
 ### Prerequisites
-- Node.js 18.17+ or 20+
-- npm 9+
+- **Node.js**: v18.18+ or v20+
+- **npm**: v9+ (or pnpm / yarn)
 
-### Installation
+### 1. Clone the Repository
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/semester-planner.git
+git clone https://github.com/sylvester2703/SEMESTER.git
+cd SEMESTER
+```
 
-# Navigate into project directory
-cd semester-planner
-
-# Install dependencies
+### 2. Install Dependencies
+```bash
 npm install
 ```
 
-### Development Server
+### 3. Run the Development Server
 ```bash
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Type Check & Production Build
+### 4. Verify TypeScript & Compile Production Build
 ```bash
-# Verify TypeScript integrity
+# Verify TypeScript integrity (0 errors)
 npx tsc --noEmit
 
-# Compile production bundle
+# Compile production bundle for deployment
 npm run build
 
-# Start local production server
+# Test production build locally
 npm run start
 ```
 
 ---
 
-## 5. Vercel Deployment Instructions
+## 8. Vercel Deployment Instructions
 
-SEMESTER is optimized out-of-the-box for frictionless zero-config deployment on Vercel:
+SEMESTER is configured and tested for **zero-config, 1-click deployment on Vercel**:
 
-1. Push your repository to GitHub, GitLab, or Bitbucket.
-2. Log in to [Vercel](https://vercel.com) and click **"Add New Project"**.
-3. Import your repository.
-4. Keep the default settings:
+### Option A: Deploy via Vercel Dashboard (Recommended)
+1. Push your repository to GitHub: `https://github.com/sylvester2703/SEMESTER`.
+2. Visit [Vercel](https://vercel.com) and sign in.
+3. Click **"Add New Project"** and select **"Import Git Repository"**.
+4. Choose the `SEMESTER` repository.
+5. Vercel will automatically detect **Next.js**:
    - **Framework Preset**: Next.js
-   - **Build Command**: `npm run build`
+   - **Root Directory**: `./`
+   - **Build Command**: `npm run build` (or `next build`)
    - **Output Directory**: `.next`
    - **Install Command**: `npm install`
-5. No environment variables are required.
-6. Click **Deploy**. Your live planner will be accessible globally within minutes.
+6. **Environment Variables**: None required! The app is entirely self-contained.
+7. Click **Deploy**. Your application will be live globally on a `*.vercel.app` domain within ~60 seconds.
+
+### Option B: Deploy via Vercel CLI
+```bash
+npm i -g vercel
+vercel
+# Follow interactive prompts to deploy preview
+vercel --prod
+# Deploys directly to production
+```
 
 ---
 
-## 6. SASC PixelRush Judging Criteria Alignment
+## 9. Directory Structure
 
-| Criteria | Score Weight | SEMESTER Implementation |
+```
+SEMESTER/
+├── app/
+│   ├── favicon.ico              # Vector branded favicon
+│   ├── globals.css              # Editorial tokens, typography, and theme vars
+│   ├── layout.tsx               # Root HTML layout with viewport & metadata
+│   └── page.tsx                 # Main application controller with view router
+├── components/
+│   ├── assistant/
+│   │   └── what-to-study-modal.tsx  # "What should I study now?" recommendation modal
+│   ├── dashboard/
+│   │   ├── countdown-card.tsx       # Real-time tabular exam countdown card
+│   │   ├── dashboard-view.tsx       # Main student dashboard with status & metrics
+│   │   ├── next-action-card.tsx     # Smart next step recommendation card
+│   │   ├── plan-explanation-banner.tsx # Dynamic plan reasoning explanation
+│   │   └── today-plan.tsx           # Today's study session list with checkoff
+│   ├── exams/
+│   │   ├── exam-day-mode.tsx        # Urgent exam-day banner & checklist (<48h)
+│   │   └── exams-view.tsx           # Subject & examination calendar manager
+│   ├── focus/
+│   │   └── focus-view.tsx           # Pomodoro deep focus timer with Web Audio chime
+│   ├── modals/
+│   │   ├── add-exam-modal.tsx       # Subject & exam creation dialog
+│   │   ├── add-session-modal.tsx    # Manual study session scheduler
+│   │   ├── missed-session-modal.tsx # Guilt-free missed session recovery modal
+│   │   ├── pdf-export-modal.tsx     # 5-preset PDF export configuration dialog
+│   │   └── suggest-plan-modal.tsx   # 7-day schedule generator dialog
+│   ├── navigation/
+│   │   ├── app-footer.tsx           # Editorial footer with dynamic copyright & links
+│   │   └── app-header.tsx           # Header with vector logo, quick actions & timer
+│   ├── onboarding/
+│   │   └── onboarding-modal.tsx     # 5-step conversational routine & plan wizard
+│   ├── readiness/
+│   │   ├── readiness-view.tsx       # Syllabus unit & topic tracker with recall triggers
+│   │   └── workload-estimator.tsx   # Available hours vs. syllabus required hours calculator
+│   ├── recall/
+│   │   └── active-recall-modal.tsx  # Spaced repetition testing & rating modal
+│   ├── review/
+│   │   └── review-view.tsx          # Weekly review, focus totals & subject charts
+│   ├── settings/
+│   │   └── settings-view.tsx        # Profile, JSON backup/restore & clean reset
+│   ├── timetable/
+│   │   ├── agenda-view.tsx          # Responsive day-by-day timetable agenda
+│   │   ├── timetable-view.tsx       # 7-day calendar grid with conflict detection
+│   │   └── week-grid.tsx            # Desktop interactive time-block grid
+│   └── ui/
+│       └── toast.tsx                # Accessible non-intrusive notification toasts
+├── lib/
+│   ├── audio/
+│   │   └── chime.ts                 # Web Audio API synthetic harmonic academic chime
+│   ├── calculations/
+│   │   └── index.ts                 # Workload estimations, countdowns, readiness math
+│   ├── context/
+│   │   └── planner-context.tsx      # Unified React context & action dispatchers
+│   ├── pdf/
+│   │   └── generate-pdf.ts          # Client-side multi-page PDF generation engine
+│   ├── recommendations/
+│   │   └── index.ts                 # "What should I study now?" deterministic engine
+│   ├── scheduling/
+│   │   └── index.ts                 # Conflict-free weekly scheduler & routine inverter
+│   └── storage/
+│       ├── index.ts                 # LocalStorage persistence & schema validator
+│       └── sample-data.ts           # Realistic college routine & syllabus sample data
+├── types/
+│   └── index.ts                     # Comprehensive TypeScript interfaces & domain models
+├── next.config.mjs                  # Next.js 15 production configuration
+├── package.json                     # Project manifest and scripts
+├── postcss.config.mjs               # PostCSS plugins (Tailwind)
+├── tailwind.config.ts               # Custom editorial color tokens & fonts
+└── tsconfig.json                    # Strict TypeScript configuration
+```
+
+---
+
+## 10. Verification & Acceptance Checklist
+
+| Scenario | Status | Verification Detail |
 | :--- | :---: | :--- |
-| **Ease of Use & Flow** | 30 Marks | Frictionless 4-step onboarding, zero login hurdles, clear visual hierarchy answering the 4 core daily student questions immediately. |
-| **Creativity & Originality** | 25 Marks | Syllabus Readiness Map with honest states, Smart Next Step recommendation engine, synthetic Web Audio chime, rule-based 7-day planner. |
-| **Visual Design** | 25 Marks | Premium editorial aesthetic, warm paper tones, Newsreader serif headers, tabular numerals, refined dark mode, zero generic AI blobs. |
-| **Responsiveness** | 10 Marks | Mobile-first architecture tested across 320px, 375px, 430px, 768px, 1024px, and 1440px viewports with dedicated day agenda and touch drawers. |
-| **Idea Explanation** | 10 Marks | Grounded in the emotional reality of university examination stress, clear "Why SEMESTER?" motivation, transparent math, and full user data sovereignty. |
+| **1. Daily Routine with Fixed College Hours** | PASS | Routine builder captures college (09:00–16:00), commute, sleep, and meals. |
+| **2. Weekday vs. Weekend Routines** | PASS | Days-of-week checkboxes permit distinct schedules for Mon–Fri vs. Sat–Sun. |
+| **3. Overlapping Commitment Detection** | PASS | Timetable grid flags and prevents concurrent overlapping sessions. |
+| **4. Multi-Subject & Syllabus Management** | PASS | Add subjects with exam dates, units, and individual topics with difficulty ratings. |
+| **5. Collision-Free Weekly Plan Generation** | PASS | `getAvailableFreeIntervals` strictly avoids college, commute, sleep, and meals. |
+| **6. User Availability & Preferences Respected** | PASS | Honors daily hours limits, preferred study periods (e.g. evening), and lighter days. |
+| **7. "What should I study now?" Assistant** | PASS | Recommends 1 primary + 1 alternative task based on real-time availability window. |
+| **8. Guilt-Free Missed-Session Recovery** | PASS | Reschedules, splits, or dismisses missed tasks without overloading the next day. |
+| **9. Spaced Revision & Active Recall** | PASS | In-memory recall testing schedules review intervals at 1d (Hard), 3d (OK), 7d (Easy). |
+| **10. Workload Feasibility Estimator** | PASS | Warns when remaining syllabus hours exceed physically available study time. |
+| **11. Exam-Day Preparation Mode** | PASS | Activates within 48h with countdown, room info, and dismissible logistics checklist. |
+| **12. Client-Side Printable PDF Generator** | PASS | Produces 5 clean export presets with vector logo, tabular dates, and dynamic copyright. |
+| **13. Local-First Persistence & Recovery** | PASS | Persists safely across browser refreshes; includes JSON backup/restore & clean reset. |
+| **14. Strict Type Safety & Clean Build** | PASS | `tsc --noEmit` and `npm run build` pass with 0 errors. |
+| **15. Vercel Deployment Ready** | PASS | Fully autonomous frontend application with zero server requirements. |
 
 ---
 
-## 7. Privacy & Limitations
+## 11. License & Intellectual Property Notice
 
-- **Browser Storage Scope**: All data resides strictly in the current browser's `localStorage`. Clearing browser site data or cookies will reset local storage. Use the **Download JSON Backup** button in Settings to preserve your plan across browser resets or devices.
-- **Zero Cloud Sync**: By design, no credentials or personal notes are transmitted across the network.
+- **Software License**: Distributed under the [MIT License](LICENSE).
+- **Brand & Visual Identity**: SEMESTER and its original editorial design system, vector branding, and written content are authored for the SASC PixelRush UI/UX Build Challenge.
+
+> *“Every semester deserves a better plan.”*  
+> © 2026 SEMESTER · All rights reserved.

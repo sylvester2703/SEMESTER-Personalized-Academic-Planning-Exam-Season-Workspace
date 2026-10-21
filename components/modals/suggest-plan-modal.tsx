@@ -15,7 +15,9 @@ export function SuggestPlanModal({ isOpen, onClose }: SuggestPlanModalProps) {
   const { data, applySuggestedPlan, addSession, addToast } = usePlanner();
 
   const [replaceExisting, setReplaceExisting] = useState<boolean>(false);
-  const [dailyHours, setDailyHours] = useState<number>(data.profile.dailyAvailabilityHours || 3);
+  const [dailyHours, setDailyHours] = useState<number>(
+    data.profile.preferences?.dailyAvailabilityHours || data.profile.dailyAvailabilityHours || 3
+  );
   const [daysCount, setDaysCount] = useState<number>(7);
 
   if (!isOpen) return null;

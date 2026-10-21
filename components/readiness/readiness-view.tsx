@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
 import { Subject, Topic, TopicStatus } from '@/types';
 import { calculateSubjectReadiness } from '@/lib/calculations';
+import { WorkloadEstimator } from './workload-estimator';
 import {
   MapPin,
   Plus,
@@ -17,6 +18,7 @@ import {
   Filter,
   Layers,
   Sparkles,
+  Brain,
 } from 'lucide-react';
 
 interface ReadinessViewProps {
@@ -24,6 +26,7 @@ interface ReadinessViewProps {
   onOpenNewTopic: (subjectId: string) => void;
   onEditTopic: (topic: Topic) => void;
   onOpenNewSubject: () => void;
+  onOpenRecall?: (topic: Topic) => void;
 }
 
 export function ReadinessView({
@@ -31,6 +34,7 @@ export function ReadinessView({
   onOpenNewTopic,
   onEditTopic,
   onOpenNewSubject,
+  onOpenRecall,
 }: ReadinessViewProps) {
   const {
     data,
@@ -106,6 +110,9 @@ export function ReadinessView({
           <span>Add Topic to Syllabus</span>
         </button>
       </div>
+
+      {/* Syllabus Workload Estimator */}
+      <WorkloadEstimator />
 
       {/* Subject Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-paper-200 dark:border-paper-800">
@@ -298,6 +305,17 @@ export function ReadinessView({
                     </div>
 
                     <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                      {onOpenRecall && (
+                        <button
+                          onClick={() => onOpenRecall(topic)}
+                          className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium text-amber-800 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-300 dark:border-amber-800 transition-colors"
+                          title="Self-test memory retrieval without notes"
+                        >
+                          <Brain className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                          <span>Test Recall</span>
+                        </button>
+                      )}
+
                       <button
                         onClick={() => onEditTopic(topic)}
                         className="p-1 text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 rounded"

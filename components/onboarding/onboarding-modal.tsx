@@ -2,9 +2,21 @@
 
 import React, { useState } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
-import { Subject, Topic, StudySession, ConfidenceLevel } from '@/types';
-import { generateSuggestedWeeklyPlan } from '@/lib/scheduling';
-import { format, addDays } from 'date-fns';
+import {
+  Subject,
+  Topic,
+  StudySession,
+  ConfidenceLevel,
+  SubjectDifficulty,
+  SubjectPrepLevel,
+  SubjectPriority,
+  RoutineCommitment,
+  RoutineCategory,
+  StudyPreferences,
+  PersonalGoal,
+} from '@/types';
+import { generateSuggestedWeeklyPlan, doSessionsOverlap } from '@/lib/scheduling';
+import { format, addDays, parseISO } from 'date-fns';
 import {
   Sparkles,
   ArrowRight,
@@ -17,6 +29,12 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
+  Shield,
+  Layers,
+  Heart,
+  Target,
+  AlertTriangle,
+  Compass,
 } from 'lucide-react';
 
 interface OnboardingModalProps {
@@ -27,53 +45,142 @@ interface OnboardingModalProps {
 
 export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingModalProps) {
   const {
-    data,
     updateProfile,
     addSubject,
     addTopic,
     addSession,
-    resetAllData,
+    addGoal,
     addToast,
   } = usePlanner();
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
-  // Step 1: Name & Semester
+  // STEP 1: Understand the Student
   const [displayName, setDisplayName] = useState('');
+  const [academicYear, setAcademicYear] = useState('');
   const [semesterTitle, setSemesterTitle] = useState('Final Semester Examinations');
+  const [primaryGoal, setPrimaryGoal] = useState('Complete the syllabus with consistent daily revision');
+  const [weeklyTopicTarget, setWeeklyTopicTarget] = useState<number>(6);
 
-  // Step 2: Subject builder
+  // STEP 2: Daily Routine & Fixed Commitments
+  const [commitments, setCommitments] = useState<RoutineCommitment[]>([
+    {
+      id: 'c-college',
+      name: 'College / University Hours',
+      category: 'college',
+      daysOfWeek: [1, 2, 3, 4, 5],
+      startTime: '09:00',
+      endTime: '16:00',
+      isFixed: true,
+      notes: 'Lectures and laboratory sessions',
+    },
+    {
+      id: 'c-sleep',
+      name: 'Sleep & Night Rest',
+      category: 'sleep',
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+      startTime: '23:00',
+      endTime: '07:00',
+      isFixed: true,
+      notes: 'Consistent restful sleep schedule',
+    },
+    {
+      id: 'c-commute',
+      name: 'Commute to/from Campus',
+      category: 'commute',
+      daysOfWeek: [1, 2, 3, 4, 5],
+      startTime: '08:00',
+      endTime: '09:00',
+      isFixed: true,
+    },
+    {
+      id: 'c-dinner',
+      name: 'Dinner & Family Time',
+      category: 'meals',
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+      startTime: '19:30',
+      endTime: '20:30',
+      isFixed: true,
+    },
+  ]);
+
+  // Form for adding a new commitment
+  const [newCommName, setNewCommName] = useState('');
+  const [newCommCategory, setNewCommCategory] = useState<RoutineCategory>('college');
+  const [newCommDays, setNewCommDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [newCommStart, setNewCommStart] = useState('17:00');
+  const [newCommEnd, setNewCommEnd] = useState('18:00');
+  const [newCommFixed, setNewCommFixed] = useState(true);
+
+  // STEP 3: Subjects & Examinations
   const [subjectName, setSubjectName] = useState('');
   const [subjectCode, setSubjectCode] = useState('');
   const [examDate, setExamDate] = useState(format(addDays(new Date(), 14), 'yyyy-MM-dd'));
   const [examTime, setExamTime] = useState('09:30');
-  const [confidence, setConfidence] = useState<ConfidenceLevel>('medium');
-  const [initialTopicNames, setInitialTopicNames] = useState<string>('Unit 1 Core Theory, Unit 2 Problem Solving');
+  const [difficulty, setDifficulty] = useState<SubjectDifficulty>('moderate');
+  const [prepLevel, setPrepLevel] = useState<SubjectPrepLevel>('in_progress');
+  const [priority, setPriority] = useState<SubjectPriority>('high');
+  const [initialTopicNames, setInitialTopicNames] = useState('Core Architecture, Relational Queries, Practice Problems');
 
-  // Draft subjects list for multi-course entry
   const [draftSubjects, setDraftSubjects] = useState<
     {
       name: string;
       code: string;
       examDate: string;
       examTime: string;
+      difficulty: SubjectDifficulty;
+      prepLevel: SubjectPrepLevel;
+      priority: SubjectPriority;
       confidence: ConfidenceLevel;
       topics: string[];
     }[]
   >([]);
 
-  // Step 3: Availability
-  const [dailyHours, setDailyHours] = useState<number>(3);
+  // STEP 4: Study Preferences
+  const [dailyHours, setDailyHours] = useState<number>(3.5);
+  const [sessionDuration, setSessionDuration] = useState<25 | 45 | 60 | 90>(45);
+  const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('evening');
+  const [pacing, setPacing] = useState<'short_frequent' | 'longer_blocks'>('short_frequent');
+  const [lighterSunday, setLighterSunday] = useState<boolean>(true);
 
-  // Step 4: Preview plan
-  const [previewSessions, setPreviewSessions] = useState<StudySession[]>([]);
+  // STEP 5: Goals & Plan Summary
+  const [goalPreset, setGoalPreset] = useState<string>('finish_syllabus');
+  const [customGoalText, setCustomGoalText] = useState('');
+  const [previewPlan, setPreviewPlan] = useState<StudySession[] & { explanation?: string; feasibilityWarning?: string }>([] as any);
 
   if (!isOpen) return null;
+
+  // Day toggler for commitments
+  const toggleDay = (day: number) => {
+    if (newCommDays.includes(day)) {
+      setNewCommDays(newCommDays.filter((d) => d !== day));
+    } else {
+      setNewCommDays([...newCommDays, day].sort());
+    }
+  };
+
+  const handleAddCommitment = () => {
+    if (!newCommName.trim()) return;
+    const item: RoutineCommitment = {
+      id: `comm-${Date.now()}`,
+      name: newCommName.trim(),
+      category: newCommCategory,
+      daysOfWeek: newCommDays.length > 0 ? newCommDays : [1, 2, 3, 4, 5],
+      startTime: newCommStart,
+      endTime: newCommEnd,
+      isFixed: newCommFixed,
+    };
+    setCommitments([...commitments, item]);
+    setNewCommName('');
+  };
+
+  const handleDeleteCommitment = (id: string) => {
+    setCommitments(commitments.filter((c) => c.id !== id));
+  };
 
   // Add draft subject
   const handleAddDraftSubject = () => {
     if (!subjectName.trim()) return;
-
     const topicsArray = initialTopicNames
       .split(',')
       .map((t) => t.trim())
@@ -86,20 +193,22 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
         code: subjectCode.trim(),
         examDate,
         examTime,
-        confidence,
-        topics: topicsArray.length > 0 ? topicsArray : ['Core Syllabus Review'],
+        difficulty,
+        prepLevel,
+        priority,
+        confidence: prepLevel === 'well_prepared' ? 'high' : prepLevel === 'in_progress' ? 'medium' : 'low',
+        topics: topicsArray.length > 0 ? topicsArray : ['Core Theory & Practice'],
       },
     ]);
 
-    // Reset fields for next subject
     setSubjectName('');
     setSubjectCode('');
     setExamDate(format(addDays(new Date(), 21), 'yyyy-MM-dd'));
     setInitialTopicNames('');
   };
 
+  // Generate Preview
   const handleGeneratePreview = () => {
-    // If user entered a subject in the inputs but didn't click "Add to list", add it now
     let allSubjects = [...draftSubjects];
     if (subjectName.trim()) {
       const topicsArray = initialTopicNames
@@ -111,7 +220,10 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
         code: subjectCode.trim(),
         examDate,
         examTime,
-        confidence,
+        difficulty,
+        prepLevel,
+        priority,
+        confidence: prepLevel === 'well_prepared' ? 'high' : 'medium',
         topics: topicsArray.length > 0 ? topicsArray : ['Core Syllabus Review'],
       });
       setDraftSubjects(allSubjects);
@@ -121,486 +233,800 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
       addToast({
         type: 'warning',
         title: 'Add at least one subject',
-        description: 'Provide your subject name and exam date to generate a study plan.',
+        description: 'Enter your subject name and exam date to generate a study timetable.',
       });
       return;
     }
 
-    // Convert draft subjects to temporary Subject and Topic models to run the rule generator
     const mockSubjects: Subject[] = allSubjects.map((s, idx) => ({
       id: `draft-subj-${idx}`,
       name: s.name,
       code: s.code,
       examDate: s.examDate,
       examTime: s.examTime,
+      difficulty: s.difficulty,
+      prepLevel: s.prepLevel,
+      priority: s.priority,
       confidence: s.confidence,
       color: ['#2D5541', '#D99B38', '#3B6B7A', '#765C83'][idx % 4],
       createdAt: new Date().toISOString(),
     }));
 
     const mockTopics: Topic[] = [];
-    allSubjects.forEach((s, subjIdx) => {
-      s.topics.forEach((tTitle, topIdx) => {
+    allSubjects.forEach((s, sIdx) => {
+      s.topics.forEach((tTitle, tIdx) => {
         mockTopics.push({
-          id: `draft-top-${subjIdx}-${topIdx}`,
-          subjectId: `draft-subj-${subjIdx}`,
+          id: `draft-top-${sIdx}-${tIdx}`,
+          subjectId: `draft-subj-${sIdx}`,
           title: tTitle,
           status: 'not_started',
         });
       });
     });
 
-    const generated = generateSuggestedWeeklyPlan(mockSubjects, mockTopics, dailyHours, new Date(), 7);
-    setPreviewSessions(generated);
-    setStep(4);
+    const preferences: Partial<StudyPreferences> = {
+      dailyAvailabilityHours: dailyHours,
+      preferredSessionDuration: sessionDuration,
+      sessionPacing: pacing,
+      preferredTimeOfDay: timeOfDay,
+      lighterDays: lighterSunday ? [0] : [],
+    };
+
+    const plan = generateSuggestedWeeklyPlan(
+      mockSubjects,
+      mockTopics,
+      commitments,
+      new Date(),
+      7,
+      preferences
+    );
+
+    setPreviewPlan(plan);
+    setStep(5);
   };
 
-  // Final Commit & Save
+  // Save everything and launch
   const handleSaveAndLaunch = () => {
-    // 1. Update Profile
+    // 1. Preferences & Routine
+    const preferences: StudyPreferences = {
+      dailyAvailabilityHours: dailyHours,
+      preferredSessionDuration: sessionDuration,
+      sessionPacing: pacing,
+      preferredTimeOfDay: timeOfDay,
+      breakFrequencyMinutes: 45,
+      prioritizationStrategy: 'nearest_exam',
+      lighterDays: lighterSunday ? [0] : [],
+    };
+
+    // 2. Personal Goal
+    const goalTitle = customGoalText.trim()
+      ? customGoalText.trim()
+      : goalPreset === 'revise_twice'
+      ? 'Revise every subject twice before exams'
+      : goalPreset === 'daily_consistency'
+      ? 'Build steady daily study consistency'
+      : 'Finish all syllabus units before the examination period';
+
+    const newGoal: PersonalGoal = {
+      id: `goal-${Date.now()}`,
+      title: goalTitle,
+      category: goalPreset as any,
+      completed: false,
+      milestones: [
+        { id: `m-${Date.now()}-1`, title: 'Complete high-priority revision units', completed: false },
+        { id: `m-${Date.now()}-2`, title: 'Timed past paper review under exam conditions', completed: false },
+      ],
+    };
+
     updateProfile({
       displayName: displayName.trim() || 'Student',
+      academicYearOrLevel: academicYear.trim() || 'Undergraduate',
       semesterName: semesterTitle.trim() || 'Exam Preparation',
-      dailyAvailabilityHours: dailyHours,
+      primaryGoalDescription: goalTitle,
+      preferences,
+      routineCommitments: commitments,
+      goals: [newGoal],
+      planExplanation: previewPlan.explanation,
       onboarded: true,
       isSampleData: false,
     });
 
-    // 2. Clear old demo sessions & add real subjects + topics
+    // 3. Create real subjects and topics
+    const createdSubjectMap = new Map<string, string>(); // draft-subj-X -> real-id
+
     draftSubjects.forEach((s, idx) => {
-      const createdSubj = addSubject({
+      const created = addSubject({
         name: s.name,
         code: s.code,
         examDate: s.examDate,
         examTime: s.examTime,
+        difficulty: s.difficulty,
+        prepLevel: s.prepLevel,
+        priority: s.priority,
         confidence: s.confidence,
         color: ['#2D5541', '#D99B38', '#3B6B7A', '#765C83'][idx % 4],
       });
+      createdSubjectMap.set(`draft-subj-${idx}`, created.id);
 
       s.topics.forEach((tTitle) => {
         addTopic({
-          subjectId: createdSubj.id,
+          subjectId: created.id,
           title: tTitle,
           status: 'not_started',
         });
       });
     });
 
-    // 3. Add generated sessions
-    previewSessions.forEach((sess) => {
+    // 4. Save generated sessions with real subject IDs
+    previewPlan.forEach((sess) => {
+      const realSubjId = createdSubjectMap.get(sess.subjectId) || sess.subjectId;
       addSession({
-        subjectId: sess.subjectId,
+        subjectId: realSubjId,
         title: sess.title,
         date: sess.date,
         startTime: sess.startTime,
         endTime: sess.endTime,
         durationMinutes: sess.durationMinutes,
         completed: false,
+        isAutoGenerated: true,
         notes: sess.notes,
       });
     });
 
     addToast({
       type: 'success',
-      title: 'Study plan created!',
-      description: 'Your subjects, countdowns, and weekly schedule are live.',
+      title: 'Your personalised plan is ready!',
+      description: 'Built around your routine, commitments, and exam deadlines.',
     });
 
     onPlanCreated();
     onClose();
   };
 
-  const handleUseSampleData = () => {
-    resetAllData(true);
-    addToast({
-      type: 'info',
-      title: 'Loaded sample study workspace',
-      description: 'You can customize or reset anytime from Settings.',
-    });
-    onPlanCreated();
-    onClose();
-  };
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/70 backdrop-blur-xs"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="onboarding-title"
+      aria-labelledby="onboarding-modal-title"
     >
-      <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-xl max-w-xl w-full p-6 sm:p-8 shadow-elevated animate-in zoom-in-95 duration-150 relative max-h-[90vh] overflow-y-auto">
-        {/* Close Button */}
+      <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-elevated animate-in zoom-in-95 duration-150 relative max-h-[92vh] overflow-y-auto">
         <button
           onClick={onClose}
+          aria-label="Close onboarding"
           className="absolute top-5 right-5 p-1.5 rounded text-ink-400 hover:text-ink-800 dark:hover:text-white"
-          aria-label="Cancel onboarding"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
 
-        {/* Progress indicator */}
-        <div className="flex items-center gap-2 mb-6">
-          {[1, 2, 3, 4].map((i) => (
+        {/* Multi-step progress bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-ink-400 mb-2">
+            <span>Step {step} of 5</span>
+            <span className="text-forest dark:text-emerald-400">
+              {step === 1 && 'Understand You'}
+              {step === 2 && 'Daily Routine & Commitments'}
+              {step === 3 && 'Subjects & Syllabus'}
+              {step === 4 && 'Study Preferences'}
+              {step === 5 && 'Goal & Personalized Plan'}
+            </span>
+          </div>
+          <div className="w-full bg-paper-200 dark:bg-paper-800 h-1.5 rounded-full overflow-hidden">
             <div
-              key={i}
-              className={`h-1.5 flex-1 rounded-full transition-all ${
-                i <= step ? 'bg-forest dark:bg-emerald-500' : 'bg-paper-200 dark:bg-paper-800'
-              }`}
+              className="bg-forest dark:bg-emerald-500 h-full transition-all duration-300"
+              style={{ width: `${(step / 5) * 100}%` }}
             />
-          ))}
+          </div>
         </div>
 
-        {/* STEP 1: Name & Semester */}
+        {/* ---------------------------------------------------- */}
+        {/* STEP 1: UNDERSTAND THE STUDENT */}
+        {/* ---------------------------------------------------- */}
         {step === 1 && (
-          <div className="space-y-4">
+          <div className="space-y-5 animate-in fade-in-50 duration-200">
             <div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-forest dark:text-emerald-400">
-                Step 1 of 4 • Welcome
-              </span>
-              <h3
-                id="onboarding-title"
-                className="font-serif text-2xl font-semibold text-ink-950 dark:text-ink-50 mt-1"
-              >
-                Let’s set up your exam season
+              <h3 id="onboarding-modal-title" className="font-serif text-2xl font-bold text-ink-950 dark:text-ink-50">
+                Let’s plan your semester around you.
               </h3>
-              <p className="text-xs text-ink-600 dark:text-ink-400 mt-1">
-                SEMESTER keeps your preparation realistic and calm. Enter a display name or skip to continue.
+              <p className="text-xs text-ink-500 dark:text-ink-400 mt-1 leading-relaxed">
+                SEMESTER creates a plan fitted to your actual life, not a generic dashboard. We only ask what directly affects your schedule.
               </p>
             </div>
 
-            <div className="space-y-3 pt-2">
+            <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-ink-700 dark:text-ink-300 mb-1">
-                  What should we call you? (optional)
+                <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
+                  What should we call you? (Optional)
                 </label>
                 <input
                   type="text"
+                  placeholder="e.g. Alex, Sam, or your nickname"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="e.g. Jordan"
-                  className="w-full text-xs rounded-md border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 p-2.5 text-ink-900 dark:text-ink-100 focus-visible:ring-1 focus-visible:ring-forest"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-sm text-ink-900 dark:text-white focus:ring-1 focus:ring-forest"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-ink-700 dark:text-ink-300 mb-1">
-                  Semester or Exam Period
+                <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
+                  Academic Level or Year (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 3rd Year B.Tech, Master’s, Final Semester"
+                  value={academicYear}
+                  onChange={(e) => setAcademicYear(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-sm text-ink-900 dark:text-white focus:ring-1 focus:ring-forest"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
+                  Primary Academic Focus
+                </label>
+                <input
+                  type="text"
+                  value={primaryGoal}
+                  onChange={(e) => setPrimaryGoal(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-sm text-ink-900 dark:text-white focus:ring-1 focus:ring-forest"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
+                  Semester Title / Examination Series
                 </label>
                 <input
                   type="text"
                   value={semesterTitle}
                   onChange={(e) => setSemesterTitle(e.target.value)}
-                  placeholder="e.g. Spring 2026 Finals"
-                  className="w-full text-xs rounded-md border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 p-2.5 text-ink-900 dark:text-ink-100 focus-visible:ring-1 focus-visible:ring-forest"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-sm text-ink-900 dark:text-white focus:ring-1 focus:ring-forest"
                 />
               </div>
             </div>
 
-            <div className="pt-4 flex items-center justify-between border-t border-paper-200 dark:border-paper-800">
-              <button
-                type="button"
-                onClick={handleUseSampleData}
-                className="text-xs text-ink-500 hover:text-ink-800 dark:hover:text-ink-200 underline"
-              >
-                Or explore with sample data
-              </button>
-
+            <div className="flex justify-end pt-4 border-t border-paper-200 dark:border-paper-800">
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-sm transition-all"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-forest hover:bg-forest-dark text-white text-xs font-semibold shadow-xs"
               >
-                <span>Next: Add Subjects</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span>Continue to Daily Routine</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 2: Add Subjects */}
+        {/* ---------------------------------------------------- */}
+        {/* STEP 2: BUILD THE DAILY ROUTINE */}
+        {/* ---------------------------------------------------- */}
         {step === 2 && (
-          <div className="space-y-4">
+          <div className="space-y-5 animate-in fade-in-50 duration-200">
             <div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-forest dark:text-emerald-400">
-                Step 2 of 4 • Examination Dates
-              </span>
-              <h3 className="font-serif text-2xl font-semibold text-ink-950 dark:text-ink-50 mt-1">
-                Add your upcoming examinations
+              <h3 className="font-serif text-2xl font-bold text-ink-950 dark:text-ink-50">
+                Your Daily Routine & Commitments
               </h3>
-              <p className="text-xs text-ink-600 dark:text-ink-400 mt-1">
-                Enter your course code, date, and confidence level.
+              <p className="text-xs text-ink-500 dark:text-ink-400 mt-1 leading-relaxed">
+                Study sessions will <strong>never</strong> be scheduled over your fixed commitments (college, sleep, commute, meals).
               </p>
             </div>
 
-            {/* Subject Input Fields */}
-            <div className="bg-paper-50 dark:bg-paper-800/60 p-3.5 rounded-lg border border-paper-300 dark:border-paper-700 space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="col-span-2">
-                  <label className="block text-[11px] font-medium text-ink-700 dark:text-ink-300 mb-1">
-                    Subject Name *
+            {/* Existing commitments list */}
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {commitments.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between p-3 rounded-lg border border-paper-200 dark:border-paper-800 bg-paper-50 dark:bg-paper-850 text-xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Shield className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="font-semibold text-ink-900 dark:text-white flex items-center gap-2">
+                        <span>{c.name}</span>
+                        {c.isFixed && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-forest/10 text-forest dark:text-emerald-300 font-mono">
+                            FIXED
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-ink-500 font-mono text-[11px] mt-0.5">
+                        {c.startTime} – {c.endTime} ·{' '}
+                        {c.daysOfWeek.map((d) => dayNames[d]).join(', ')}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteCommitment(c.id)}
+                    className="text-ink-400 hover:text-red-500 p-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick Add Commitment Form */}
+            <div className="p-3.5 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 space-y-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-ink-500 block">
+                Add Another Activity (e.g. Tuition, Gym, Sports)
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <input
+                  type="text"
+                  placeholder="Activity name (e.g. Evening Coaching)"
+                  value={newCommName}
+                  onChange={(e) => setNewCommName(e.target.value)}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+                />
+                <select
+                  value={newCommCategory}
+                  onChange={(e) => setNewCommCategory(e.target.value as any)}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+                >
+                  <option value="college">College / University</option>
+                  <option value="tuition">Coaching / Tuition</option>
+                  <option value="exercise">Sports / Workout</option>
+                  <option value="commute">Commute</option>
+                  <option value="meals">Meals & Break</option>
+                  <option value="personal">Personal / Hobby</option>
+                </select>
+              </div>
+
+              {/* Day selection */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] text-ink-500 mr-1">Days:</span>
+                {dayNames.map((dName, idx) => {
+                  const isSel = newCommDays.includes(idx);
+                  return (
+                    <button
+                      key={dName}
+                      type="button"
+                      onClick={() => toggleDay(idx)}
+                      className={`px-2 py-0.5 rounded text-[11px] font-mono transition-all ${
+                        isSel
+                          ? 'bg-forest text-white'
+                          : 'bg-paper-200 dark:bg-paper-700 text-ink-700 dark:text-ink-300'
+                      }`}
+                    >
+                      {dName}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Time selection */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 items-center">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-ink-500">From:</span>
+                  <input
+                    type="time"
+                    value={newCommStart}
+                    onChange={(e) => setNewCommStart(e.target.value)}
+                    className="px-2 py-1 text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-ink-500">To:</span>
+                  <input
+                    type="time"
+                    value={newCommEnd}
+                    onChange={(e) => setNewCommEnd(e.target.value)}
+                    className="px-2 py-1 text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddCommitment}
+                  className="px-3 py-1.5 rounded-lg bg-forest text-white text-xs font-semibold hover:bg-forest-dark flex items-center justify-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Block</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-paper-200 dark:border-paper-800">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-ink-600 dark:text-ink-400 hover:text-ink-900"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-forest hover:bg-forest-dark text-white text-xs font-semibold shadow-xs"
+              >
+                <span>Continue to Subjects</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------------------------------------------- */}
+        {/* STEP 3: ADD SUBJECTS AND EXAMINATIONS */}
+        {/* ---------------------------------------------------- */}
+        {step === 3 && (
+          <div className="space-y-5 animate-in fade-in-50 duration-200">
+            <div>
+              <h3 className="font-serif text-2xl font-bold text-ink-950 dark:text-ink-50">
+                Add Subjects & Examination Dates
+              </h3>
+              <p className="text-xs text-ink-500 dark:text-ink-400 mt-1 leading-relaxed">
+                Add your upcoming courses. You do not need to list every topic now; you can add syllabus units anytime.
+              </p>
+            </div>
+
+            {/* List of draft subjects */}
+            {draftSubjects.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+                  Added Courses ({draftSubjects.length})
+                </span>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                  {draftSubjects.map((s, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2.5 rounded-lg border border-paper-200 dark:border-paper-800 bg-paper-50 dark:bg-paper-850 text-xs"
+                    >
+                      <div>
+                        <span className="font-semibold text-ink-900 dark:text-white">
+                          {s.name} ({s.code || 'Course'})
+                        </span>
+                        <span className="text-ink-500 ml-2 font-mono">
+                          Exam: {s.examDate} · {s.difficulty} difficulty · {s.topics.length} topics
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setDraftSubjects(draftSubjects.filter((_, i) => i !== idx))}
+                        className="text-ink-400 hover:text-red-500 p-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Subject Entry Form */}
+            <div className="p-4 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 space-y-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
+                    Subject Name
                   </label>
                   <input
                     type="text"
+                    placeholder="e.g. Database Management Systems"
                     value={subjectName}
                     onChange={(e) => setSubjectName(e.target.value)}
-                    placeholder="e.g. Operating Systems"
-                    className="w-full text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 p-2 text-ink-900 dark:text-ink-100"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-ink-700 dark:text-ink-300 mb-1">
-                    Code (opt)
+                  <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
+                    Course Code (Optional)
                   </label>
                   <input
                     type="text"
+                    placeholder="e.g. CS 315"
                     value={subjectCode}
                     onChange={(e) => setSubjectCode(e.target.value)}
-                    placeholder="CS 304"
-                    className="w-full text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 p-2 text-ink-900 dark:text-ink-100"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-medium text-ink-700 dark:text-ink-300 mb-1">
-                    Exam Date *
+                  <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
+                    Exam Date
                   </label>
                   <input
                     type="date"
                     value={examDate}
                     onChange={(e) => setExamDate(e.target.value)}
-                    className="w-full text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 p-2 text-ink-900 dark:text-ink-100"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-ink-700 dark:text-ink-300 mb-1">
-                    Exam Time (opt)
+                  <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
+                    Difficulty
                   </label>
-                  <input
-                    type="time"
-                    value={examTime}
-                    onChange={(e) => setExamTime(e.target.value)}
-                    className="w-full text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 p-2 text-ink-900 dark:text-ink-100"
-                  />
+                  <select
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value as any)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+                  >
+                    <option value="easy">Easy (Quick revision)</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="difficult">Difficult (Extra attention)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
+                    Current Preparation
+                  </label>
+                  <select
+                    value={prepLevel}
+                    onChange={(e) => setPrepLevel(e.target.value as any)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+                  >
+                    <option value="not_started">Not Started</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="well_prepared">Well Prepared</option>
+                  </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-ink-700 dark:text-ink-300 mb-1">
-                  Confidence Level
+                <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
+                  Key Topics or Chapters (Comma-separated)
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['low', 'medium', 'high'] as ConfidenceLevel[]).map((lvl) => (
+                <input
+                  type="text"
+                  placeholder="e.g. Normalisation, B+ Trees, Concurrency Control, SQL"
+                  value={initialTopicNames}
+                  onChange={(e) => setInitialTopicNames(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddDraftSubject}
+                className="px-4 py-2 rounded-lg bg-paper-200 dark:bg-paper-700 hover:bg-forest hover:text-white text-xs font-semibold text-ink-800 dark:text-ink-100 transition-all flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add This Subject to List</span>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-paper-200 dark:border-paper-800">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-ink-600 dark:text-ink-400 hover:text-ink-900"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep(4)}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-forest hover:bg-forest-dark text-white text-xs font-semibold shadow-xs"
+              >
+                <span>Continue to Study Preferences</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ---------------------------------------------------- */}
+        {/* STEP 4: STUDY PREFERENCES */}
+        {/* ---------------------------------------------------- */}
+        {step === 4 && (
+          <div className="space-y-5 animate-in fade-in-50 duration-200">
+            <div>
+              <h3 className="font-serif text-2xl font-bold text-ink-950 dark:text-ink-50">
+                How do you study best?
+              </h3>
+              <p className="text-xs text-ink-500 dark:text-ink-400 mt-1 leading-relaxed">
+                Choose realistic targets. SEMESTER never forces impossible 10-hour study regimes.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Daily study hours slider */}
+              <div className="p-4 rounded-xl border border-paper-300 dark:border-paper-800 bg-paper-50/70 dark:bg-paper-850">
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-xs font-semibold text-ink-800 dark:text-ink-200">
+                    Realistic Daily Study Capacity
+                  </label>
+                  <span className="font-mono font-bold text-forest dark:text-emerald-400 text-sm">
+                    {dailyHours} hours / day
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="8"
+                  step="0.5"
+                  value={dailyHours}
+                  onChange={(e) => setDailyHours(Number(e.target.value))}
+                  className="w-full accent-forest"
+                />
+                <span className="text-[11px] text-ink-500 block mt-1">
+                  Excludes college and fixed commute hours. 3 to 4 hours is typical and highly sustainable.
+                </span>
+              </div>
+
+              {/* Preferred Duration */}
+              <div>
+                <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-2">
+                  Preferred Single Study Session Duration
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[25, 45, 60, 90].map((dur) => (
                     <button
-                      key={lvl}
+                      key={dur}
                       type="button"
-                      onClick={() => setConfidence(lvl)}
-                      className={`py-1 rounded text-xs capitalize transition-colors ${
-                        confidence === lvl
-                          ? 'bg-forest text-white font-semibold'
-                          : 'bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-700 text-ink-700 dark:text-ink-300'
+                      onClick={() => setSessionDuration(dur as any)}
+                      className={`py-2 text-center rounded-lg border text-xs font-semibold transition-all ${
+                        sessionDuration === dur
+                          ? 'border-forest bg-forest text-white'
+                          : 'border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-700 dark:text-ink-300'
                       }`}
                     >
-                      {lvl}
+                      {dur}m
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* Preferred Time of Day */}
               <div>
-                <label className="block text-[11px] font-medium text-ink-700 dark:text-ink-300 mb-1">
-                  Initial Syllabus Topics (comma-separated)
+                <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-2">
+                  When do you feel most alert?
                 </label>
-                <input
-                  type="text"
-                  value={initialTopicNames}
-                  onChange={(e) => setInitialTopicNames(e.target.value)}
-                  placeholder="e.g. Concurrency, Memory Paging, File Systems"
-                  className="w-full text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 p-2 text-ink-900 dark:text-ink-100"
-                />
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { id: 'morning', label: 'Morning' },
+                    { id: 'afternoon', label: 'Afternoon' },
+                    { id: 'evening', label: 'Evening' },
+                    { id: 'night', label: 'Night' },
+                  ].map((tod) => (
+                    <button
+                      key={tod.id}
+                      type="button"
+                      onClick={() => setTimeOfDay(tod.id as any)}
+                      className={`py-2 text-center rounded-lg border text-xs font-semibold capitalize transition-all ${
+                        timeOfDay === tod.id
+                          ? 'border-forest bg-forest text-white'
+                          : 'border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-700 dark:text-ink-300'
+                      }`}
+                    >
+                      {tod.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="pt-1 flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleAddDraftSubject}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-paper-200 dark:bg-paper-700 hover:bg-paper-300 text-ink-900 dark:text-white text-xs font-medium transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Subject to List</span>
-                </button>
-              </div>
+              {/* Lighter Sunday toggle */}
+              <label className="flex items-center gap-3 p-3 rounded-lg border border-paper-200 dark:border-paper-800 bg-white dark:bg-paper-800 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={lighterSunday}
+                  onChange={(e) => setLighterSunday(e.target.checked)}
+                  className="rounded border-paper-300 text-forest focus:ring-forest"
+                />
+                <div>
+                  <span className="text-xs font-semibold text-ink-900 dark:text-white block">
+                    Keep Sundays as lighter recovery days
+                  </span>
+                  <span className="text-[11px] text-ink-500">
+                    Schedules lighter 1–1.5 hour revision sessions to prevent academic burnout.
+                  </span>
+                </div>
+              </label>
             </div>
 
-            {/* List of Added Subjects */}
-            {draftSubjects.length > 0 && (
-              <div className="space-y-1.5">
-                <p className="text-[11px] font-semibold uppercase text-ink-500">
-                  Ready to plan ({draftSubjects.length} subjects added):
-                </p>
-                {draftSubjects.map((s, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-2 rounded bg-paper-100 dark:bg-paper-800 text-xs"
-                  >
-                    <div>
-                      <span className="font-semibold text-ink-900 dark:text-white">
-                        {s.code ? `${s.code} — ` : ''}{s.name}
-                      </span>
-                      <span className="text-ink-500 ml-2">({s.examDate})</span>
-                    </div>
-                    <button
-                      onClick={() => setDraftSubjects((p) => p.filter((_, i) => i !== idx))}
-                      className="text-ink-400 hover:text-rose-600"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="pt-4 flex items-center justify-between border-t border-paper-200 dark:border-paper-800">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="inline-flex items-center gap-1 text-xs text-ink-600 dark:text-ink-300 hover:text-ink-900"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back</span>
-              </button>
-
+            <div className="flex items-center justify-between pt-4 border-t border-paper-200 dark:border-paper-800">
               <button
                 type="button"
                 onClick={() => setStep(3)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-sm transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-ink-600 dark:text-ink-400 hover:text-ink-900"
               >
-                <span>Next: Study Availability</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 3: Study Availability */}
-        {step === 3 && (
-          <div className="space-y-4">
-            <div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-forest dark:text-emerald-400">
-                Step 3 of 4 • Realistic Capacity
-              </span>
-              <h3 className="font-serif text-2xl font-semibold text-ink-950 dark:text-ink-50 mt-1">
-                How many hours can you realistically study per day?
-              </h3>
-              <p className="text-xs text-ink-600 dark:text-ink-400 mt-1">
-                SEMESTER will never schedule sessions outside your declared availability.
-              </p>
-            </div>
-
-            <div className="py-4 space-y-4">
-              <div className="grid grid-cols-4 gap-2.5">
-                {[1.5, 2.5, 3.5, 5].map((hours) => (
-                  <button
-                    key={hours}
-                    type="button"
-                    onClick={() => setDailyHours(hours)}
-                    className={`py-3 px-2 rounded-lg border text-center transition-all ${
-                      dailyHours === hours
-                        ? 'border-forest bg-forest text-white font-semibold shadow-xs'
-                        : 'border-paper-300 dark:border-paper-700 bg-paper-50 dark:bg-paper-800 text-ink-800 dark:text-ink-200 hover:border-paper-400'
-                    }`}
-                  >
-                    <span className="font-serif text-xl block leading-tight">{hours}h</span>
-                    <span className="text-[10px] opacity-80">
-                      {hours <= 2 ? 'Light' : hours <= 3.5 ? 'Balanced' : 'Intensive'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="p-3.5 rounded-lg bg-paper-100 dark:bg-paper-800/60 border border-paper-200 dark:border-paper-700 text-xs text-ink-600 dark:text-ink-300 leading-relaxed">
-                <strong>Transparent heuristic:</strong> Revision sessions are chunked into 75–90 minute blocks with scheduled breaks. Closer examinations and unconfident topics are prioritized first.
-              </div>
-            </div>
-
-            <div className="pt-4 flex items-center justify-between border-t border-paper-200 dark:border-paper-800">
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="inline-flex items-center gap-1 text-xs text-ink-600 dark:text-ink-300 hover:text-ink-900"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
               </button>
-
               <button
                 type="button"
                 onClick={handleGeneratePreview}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-sm transition-all"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-forest hover:bg-forest-dark text-white text-xs font-semibold shadow-xs"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Preview Suggested Plan</span>
+                <Sparkles className="w-4 h-4" />
+                <span>Generate Plan Preview</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 4: Preview Suggested Plan */}
-        {step === 4 && (
-          <div className="space-y-4">
+        {/* ---------------------------------------------------- */}
+        {/* STEP 5: DEFINE GOAL & GENERATED PLAN PREVIEW */}
+        {/* ---------------------------------------------------- */}
+        {step === 5 && (
+          <div className="space-y-5 animate-in fade-in-50 duration-200">
             <div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-forest dark:text-emerald-400">
-                Step 4 of 4 • Plan Verification
-              </span>
-              <h3 className="font-serif text-2xl font-semibold text-ink-950 dark:text-ink-50 mt-1">
-                Your suggested 7-day study plan
+              <h3 className="font-serif text-2xl font-bold text-ink-950 dark:text-ink-50">
+                Your Semester, Planned Around You
               </h3>
-              <p className="text-xs text-ink-600 dark:text-ink-400 mt-1">
-                Review your upcoming sessions. You can edit, reschedule, or check them off once saved.
+              <p className="text-xs text-ink-500 dark:text-ink-400 mt-1 leading-relaxed">
+                Review your personalized plan explanation and study timetable before confirming.
               </p>
             </div>
 
-            {/* Session Preview List */}
-            <div className="max-h-60 overflow-y-auto space-y-2 pr-1 divide-y divide-paper-200 dark:divide-paper-800">
-              {previewSessions.map((sess, idx) => (
-                <div key={idx} className="pt-2 first:pt-0 flex items-start justify-between gap-2 text-xs">
-                  <div>
-                    <span className="font-mono text-[10px] text-ink-400 block">
-                      {sess.date} ({sess.startTime} – {sess.endTime})
-                    </span>
-                    <span className="font-medium text-ink-900 dark:text-white">
-                      {sess.title}
+            {/* Explanation box */}
+            {previewPlan.explanation && (
+              <div className="p-4 rounded-xl border border-forest/30 bg-forest/5 dark:bg-emerald-950/20 text-xs text-ink-800 dark:text-ink-200 leading-relaxed">
+                <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-forest dark:text-emerald-400 mb-1">
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>How This Plan Was Formed</span>
+                </div>
+                {previewPlan.explanation}
+              </div>
+            )}
+
+            {/* Feasibility warning if applicable */}
+            {previewPlan.feasibilityWarning && (
+              <div className="p-3.5 rounded-lg border border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+                <div>
+                  <span className="font-semibold block">Realistic Workload Warning</span>
+                  <span>{previewPlan.feasibilityWarning}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Timetable sessions sample preview */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-600 dark:text-ink-400">
+                  Generated Study Sessions ({previewPlan.length} sessions across 7 days)
+                </span>
+                <span className="text-xs font-mono text-forest dark:text-emerald-400">
+                  ~{(previewPlan.reduce((acc, s) => acc + s.durationMinutes, 0) / 60).toFixed(1)} hrs planned
+                </span>
+              </div>
+
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {previewPlan.slice(0, 8).map((sess) => (
+                  <div
+                    key={sess.id}
+                    className="flex items-center justify-between p-2 rounded bg-paper-50 dark:bg-paper-850 border border-paper-200 dark:border-paper-800 text-xs"
+                  >
+                    <div>
+                      <span className="font-semibold text-ink-900 dark:text-white">
+                        {sess.title}
+                      </span>
+                      <div className="text-[11px] font-mono text-ink-500">
+                        {sess.date} · {sess.startTime} - {sess.endTime} ({sess.durationMinutes}m)
+                      </div>
+                    </div>
+                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-forest/10 text-forest dark:text-emerald-300">
+                      Planned
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-paper-100 dark:bg-paper-800 text-ink-600 shrink-0">
-                    {sess.durationMinutes}m
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            <div className="p-3 rounded bg-sage-light dark:bg-forest/20 text-xs text-forest dark:text-emerald-300">
-              Notice: Plan is not saved until you select "Save and open workspace".
-            </div>
-
-            <div className="pt-4 flex items-center justify-between border-t border-paper-200 dark:border-paper-800">
+            <div className="flex items-center justify-between pt-4 border-t border-paper-200 dark:border-paper-800">
               <button
                 type="button"
-                onClick={() => setStep(3)}
-                className="inline-flex items-center gap-1 text-xs text-ink-600 dark:text-ink-300 hover:text-ink-900"
+                onClick={() => setStep(4)}
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-ink-600 dark:text-ink-400 hover:text-ink-900"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Adjust availability</span>
+                <ArrowLeft className="w-4 h-4" />
+                <span>Adjust Inputs</span>
               </button>
-
               <button
                 type="button"
                 onClick={handleSaveAndLaunch}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-sm transition-all"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-forest hover:bg-forest-dark text-white text-xs font-semibold shadow-sm"
               >
-                <Check className="w-3.5 h-3.5" />
-                <span>Save and open workspace</span>
+                <Check className="w-4 h-4" />
+                <span>Confirm & Open My Planner</span>
               </button>
             </div>
           </div>

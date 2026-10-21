@@ -1,5 +1,13 @@
-import { Subject, Topic, StudySession, FocusRecord, ReadinessScore, WeeklyReviewMetrics } from '@/types';
-import { parseISO, isWithinInterval, startOfWeek, endOfWeek } from 'date-fns';
+import {
+  Subject,
+  Topic,
+  StudySession,
+  FocusRecord,
+  ReadinessScore,
+  WeeklyReviewMetrics,
+  SubjectWorkloadEstimate,
+} from '@/types';
+import { parseISO, isWithinInterval, startOfWeek, endOfWeek, differenceInDays } from 'date-fns';
 
 /**
  * Calculates revision readiness score for a subject.
@@ -119,3 +127,68 @@ export function calculateWeeklyReview(
     subjectBreakdown,
   };
 }
+
+/**
+ * Calculates syllabus workload estimates comparing estimated required study time
+ * against actual available study time before each examination.
+ */
+export function calculateWorkloadEstimates(
+  subjects: Subject[],
+  topics: Topic[],
+  dailyAvailabilityHours: number = 3.5,
+  now: Date = new Date()
+): SubjectWorkloadEstimate[] {
+  return subjects.map((subj) => {
+    let daysUntilExam = 0;
+    try {
+      daysUntilExam = Math.max(0, differenceInDays(parseISO(subj.examDate), now));
+    } catch {
+      daysUntilExam = 14;
+    }
+
+    const subjTopics = topics.filter((t) => t.subjectId === subj.id);
+    const uncompleted = subjTopics.filter((t) => t.status !== 'confident');
+
+    // Remaining minutes: use student's estimatedMinutes if supplied, else 45m standard topic duration
+    const estimatedRemainingMinutes = uncompleted.reduce((acc, t) => acc + (t.estimatedMinutes || 45), 0);
+
+    // Subject's share of study capacity across available days before its exam
+    const totalDailySubjectMinutes = (dailyAvailabilityHours * 60) / Math.max(1, subjects.length);
+    const availableStudyMinutesBeforeExam = Math.round(daysUntilExam * totalDailySubjectMinutes);
+
+    const ratio = availableStudyMinutesBeforeExam > 0
+      ? Number((estimatedRemainingMinutes / availableStudyMinutesBeforeExam).toFixed(2))
+      : estimatedRemainingMinutes > 0 ? 2.5 : 0;
+
+    const isFeasible = ratio <= 1.25;
+
+    let guidanceText = '';
+    if (uncompleted.length === 0 && subjTopics.length > 0) {
+      guidanceText = 'All syllabus units are confident. Maintain light recall checks and review formula sheets.';
+    } else if (uncompleted.length === 0 && subjTopics.length === 0) {
+      guidanceText = 'No topics entered yet. Add syllabus units to calculate your revision workload.';
+    } else if (daysUntilExam === 0) {
+      guidanceText = 'Examination is today! Focus on resting, reviewing cheat-sheets, and staying calm.';
+    } else if (isFeasible) {
+      guidanceText = `Workload is well-balanced: ~${(estimatedRemainingMinutes / 60).toFixed(1)} hrs needed across ${daysUntilExam} days (~${(availableStudyMinutesBeforeExam / 60).toFixed(1)} hrs available).`;
+    } else {
+      guidanceText = `Workload mismatch: ~${(estimatedRemainingMinutes / 60).toFixed(1)} hrs needed vs ~${(availableStudyMinutesBeforeExam / 60).toFixed(1)} hrs available. Focus on high-yield units or add study blocks.`;
+    }
+
+    return {
+      subjectId: subj.id,
+      subjectName: subj.name,
+      subjectCode: subj.code,
+      color: subj.color,
+      daysUntilExam,
+      totalTopics: subjTopics.length,
+      uncompletedTopics: uncompleted.length,
+      estimatedRemainingMinutes,
+      availableStudyMinutesBeforeExam,
+      isFeasible,
+      ratio,
+      guidanceText,
+    };
+  });
+}
+

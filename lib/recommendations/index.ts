@@ -1,4 +1,12 @@
-import { Subject, Topic, StudySession, SmartRecommendation } from '@/types';
+import {
+  Subject,
+  Topic,
+  StudySession,
+  SmartRecommendation,
+  RoutineCommitment,
+  StudyPreferences,
+  WhatShouldIStudyNowResult,
+} from '@/types';
 import { format, parseISO, differenceInDays } from 'date-fns';
 
 /**
@@ -131,3 +139,113 @@ export function getSmartNextStep(
     priority: 'low',
   };
 }
+
+/**
+ * Calculates a personalized next study action for "What should I study now?"
+ * strictly using the student's current time, available window before next commitment,
+ * exam urgency, and syllabus progress.
+ */
+export function calculateWhatShouldIStudyNow(
+  subjects: Subject[],
+  topics: Topic[],
+  sessions: StudySession[],
+  commitments: RoutineCommitment[] = [],
+  preferences?: StudyPreferences,
+  now: Date = new Date()
+): WhatShouldIStudyNowResult {
+  if (!subjects || subjects.length === 0) {
+    return {
+      availableMinutesNow: 0,
+      primaryRecommendation: null,
+      alternativeRecommendation: null,
+    };
+  }
+
+  const currentH = now.getHours();
+  const currentM = now.getMinutes();
+  const nowMins = currentH * 60 + currentM;
+  const dayOfWeek = now.getDay();
+  const todayStr = format(now, 'yyyy-MM-dd');
+
+  // Find next commitment or scheduled event today
+  const todaysFixed = commitments.filter((c) => c.isFixed && c.daysOfWeek.includes(dayOfWeek));
+  let nextCommitmentName: string | undefined;
+  let nextCommitmentTime: string | undefined;
+  let availableMinutesNow = 60; // default 1 hour window
+
+  // Find upcoming fixed commitments today starting after now
+  const upcomingCommitments = todaysFixed
+    .map((c) => {
+      const [h, m] = c.startTime.split(':').map(Number);
+      return { ...c, startMins: h * 60 + m };
+    })
+    .filter((c) => c.startMins > nowMins)
+    .sort((a, b) => a.startMins - b.startMins);
+
+  if (upcomingCommitments.length > 0) {
+    const nextC = upcomingCommitments[0];
+    nextCommitmentName = nextC.name;
+    nextCommitmentTime = nextC.startTime;
+    availableMinutesNow = Math.max(15, nextC.startMins - nowMins);
+  } else {
+    // If no commitments left today, check sleep commitment (default 23:00)
+    const sleepCommitment = commitments.find((c) => c.category === 'sleep');
+    const sleepMins = sleepCommitment ? parseInt(sleepCommitment.startTime.split(':')[0]) * 60 : 23 * 60;
+    availableMinutesNow = Math.max(20, Math.min(180, sleepMins - nowMins));
+  }
+
+  // Sort subjects by nearest exam date
+  const sortedSubjects = [...subjects].sort((a, b) => {
+    return new Date(a.examDate).getTime() - new Date(b.examDate).getTime();
+  });
+
+  const preferredDuration = preferences?.preferredSessionDuration || 45;
+  const primaryDuration = Math.min(availableMinutesNow, preferredDuration);
+
+  // 1. Primary Recommendation: Highest urgency exam + uncompleted topic
+  let primarySubj = sortedSubjects[0];
+  let primaryTopic = topics.find((t) => t.subjectId === primarySubj?.id && (t.status === 'needs_revision' || t.status === 'learning'))
+    || topics.find((t) => t.subjectId === primarySubj?.id && t.status === 'not_started')
+    || topics.find((t) => t.subjectId === primarySubj?.id);
+
+  const daysToPrimary = primarySubj ? differenceInDays(parseISO(primarySubj.examDate), now) : 0;
+  let primaryTitle = primaryTopic ? `${primaryTopic.title}` : `Core Concepts in ${primarySubj?.name}`;
+  let primaryExplanation = primaryTopic
+    ? `Exam in ${daysToPrimary <= 0 ? 'today' : `${daysToPrimary} days`}. Marked "${primaryTopic.status.replace('_', ' ')}". A ${primaryDuration}-minute focused block will reinforce key concepts.`
+    : `Nearest exam in ${daysToPrimary} days. Review past papers or synthesize chapter summaries.`;
+
+  // 2. Alternative Recommendation: Different subject or practice session
+  let altSubj = sortedSubjects.length > 1 ? sortedSubjects[1] : sortedSubjects[0];
+  let altTopic = topics.find((t) => t.subjectId === altSubj?.id && t.status !== 'confident' && t.id !== primaryTopic?.id)
+    || topics.find((t) => t.subjectId === altSubj?.id && t.id !== primaryTopic?.id);
+
+  const altDuration = Math.min(availableMinutesNow, 25);
+  const daysToAlt = altSubj ? differenceInDays(parseISO(altSubj.examDate), now) : 0;
+  let altTitle = altTopic ? `Active Recall: ${altTopic.title}` : `Problem Solving for ${altSubj?.code || altSubj?.name}`;
+  let altExplanation = `Alternative option: Spend a fast ${altDuration}-minute sprint practicing recall without notes for ${altSubj?.name} (exam in ${daysToAlt} days).`;
+
+  return {
+    availableMinutesNow,
+    nextCommitmentName,
+    nextCommitmentTime,
+    primaryRecommendation: primarySubj
+      ? {
+          subject: primarySubj,
+          topic: primaryTopic,
+          durationMinutes: primaryDuration,
+          title: primaryTitle,
+          explanation: primaryExplanation,
+        }
+      : null,
+    alternativeRecommendation: altSubj
+      ? {
+          subject: altSubj,
+          topic: altTopic,
+          durationMinutes: altDuration,
+          title: altTitle,
+          explanation: altExplanation,
+        }
+      : null,
+  };
+}
+
