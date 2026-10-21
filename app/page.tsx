@@ -21,6 +21,7 @@ import { PdfExportModal } from '@/components/modals/pdf-export-modal';
 import { WhatToStudyModal } from '@/components/assistant/what-to-study-modal';
 import { MissedSessionModal } from '@/components/modals/missed-session-modal';
 import { ActiveRecallModal } from '@/components/recall/active-recall-modal';
+import { SyllabusManagerModal } from '@/components/syllabus/syllabus-manager-modal';
 import { ToastContainer } from '@/components/shared/toast-container';
 import { StudySession, Subject, Topic } from '@/types';
 
@@ -56,6 +57,9 @@ function PlannerApp() {
 
   const [activeRecallModalOpen, setActiveRecallModalOpen] = useState(false);
   const [topicForRecall, setTopicForRecall] = useState<Topic | null>(null);
+
+  const [syllabusManagerOpen, setSyllabusManagerOpen] = useState(false);
+  const [initialSyllabusSubjId, setInitialSyllabusSubjId] = useState<string | undefined>();
 
   // Handlers for opening modals
   const handleOpenNewSession = (date?: string, subjId?: string) => {
@@ -101,6 +105,11 @@ function PlannerApp() {
     setActiveRecallModalOpen(true);
   };
 
+  const handleOpenSyllabusManager = (subjectId?: string) => {
+    setInitialSyllabusSubjId(subjectId);
+    setSyllabusManagerOpen(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-paper-100 dark:bg-paper-950 text-ink-900 dark:text-ink-50">
       {/* Universal App Header with Brand Logo and Action Triggers */}
@@ -139,6 +148,7 @@ function PlannerApp() {
             onOpenNewSubject={handleOpenNewSubject}
             onEditSubject={handleEditSubject}
             onOpenNewTopic={handleOpenNewTopic}
+            onOpenSyllabusManager={handleOpenSyllabusManager}
           />
         )}
 
@@ -148,6 +158,8 @@ function PlannerApp() {
             onEditTopic={handleEditTopic}
             onOpenNewSubject={handleOpenNewSubject}
             onOpenRecall={handleOpenRecall}
+            onStartFocus={() => setActiveView('focus')}
+            onOpenSyllabusManager={handleOpenSyllabusManager}
           />
         )}
 
@@ -234,6 +246,12 @@ function PlannerApp() {
         }}
         topic={topicForRecall}
         subject={data.subjects.find((s) => s.id === topicForRecall?.subjectId)}
+      />
+
+      <SyllabusManagerModal
+        isOpen={syllabusManagerOpen}
+        onClose={() => setSyllabusManagerOpen(false)}
+        targetSubjectId={initialSyllabusSubjId}
       />
     </div>
   );

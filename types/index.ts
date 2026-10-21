@@ -31,6 +31,15 @@ export interface RoutineCommitment {
   notes?: string;
 }
 
+export interface SyllabusUnit {
+  id: string;
+  subjectId: string;
+  unitNumber?: number | string;
+  title: string;
+  order: number;
+  notes?: string;
+}
+
 export interface Subject {
   id: string;
   name: string;
@@ -45,17 +54,25 @@ export interface Subject {
   color: string;
   targetGrade?: string;
   notes?: string;
+  units?: SyllabusUnit[];
+  originalSyllabusText?: string;
+  syllabusSource?: 'manual' | 'pasted' | 'uploaded' | 'sample';
   createdAt: string;
 }
 
 export interface Topic {
   id: string;
   subjectId: string;
-  title: string;
+  unitId?: string;
   unitOrModule?: string;
+  title: string;
+  subtopics?: string[];
   status: TopicStatus;
   estimatedMinutes?: number;
+  isProvisionalEstimate?: boolean; // distinguishes student-supplied estimates from provisional defaults
   difficultyRating?: 'easy' | 'okay' | 'difficult';
+  priority?: 'high' | 'medium' | 'low';
+  order?: number;
   lastStudiedAt?: string;
   nextRecallReviewDate?: string;
   recallReviewCount?: number;
@@ -243,4 +260,29 @@ export interface WeeklyReviewMetrics {
     completedSessions: number;
     topicsCovered: number;
   }[];
+}
+
+export interface SyllabusAnalysisReport {
+  subjectId: string;
+  subjectName: string;
+  subjectCode: string;
+  color: string;
+  totalTopics: number;
+  totalUnits: number;
+  notStartedCount: number;
+  learningCount: number;
+  needsRevisionCount: number;
+  confidentCount: number;
+  readinessPercentage: number;
+  userEstimatedMinutes: number;
+  provisionalEstimatedMinutes: number;
+  totalEstimatedMinutes: number;
+  hasUserEstimates: boolean;
+  missingEstimatesCount: number;
+  daysUntilExam: number;
+  availableStudyMinutesBeforeExam: number;
+  isFeasible: boolean;
+  shortfallMinutes: number;
+  summaryExplanation: string;
+  recommendations: string[];
 }

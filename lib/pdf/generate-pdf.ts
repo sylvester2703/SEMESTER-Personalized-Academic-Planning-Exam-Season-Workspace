@@ -698,7 +698,17 @@ export async function generateStudyPlannerPdf(
       doc.setTextColor(...COLORS.subtleGray);
       doc.text(`Checklist of all topics, units, and active recall status.`, 14, 32);
 
-      const rows = data.topics.map((t) => {
+      const sortedTopics = [...data.topics].sort((a, b) => {
+        const subjA = data.subjects.find((s) => s.id === a.subjectId)?.name || '';
+        const subjB = data.subjects.find((s) => s.id === b.subjectId)?.name || '';
+        if (subjA !== subjB) return subjA.localeCompare(subjB);
+        const unitA = a.unitOrModule || '';
+        const unitB = b.unitOrModule || '';
+        if (unitA !== unitB) return unitA.localeCompare(unitB);
+        return (a.order || 0) - (b.order || 0);
+      });
+
+      const rows = sortedTopics.map((t) => {
         const subj = data.subjects.find((s) => s.id === t.subjectId);
         return [
           t.status === 'confident' ? '[X]' : '[  ]',
@@ -706,7 +716,7 @@ export async function generateStudyPlannerPdf(
           t.unitOrModule || '—',
           t.title,
           t.status.replace('_', ' ').toUpperCase(),
-          `${t.estimatedMinutes || 45}m`,
+          `${t.estimatedMinutes || 45}m${t.isProvisionalEstimate ? ' (prov)' : ''}`,
         ];
       });
 

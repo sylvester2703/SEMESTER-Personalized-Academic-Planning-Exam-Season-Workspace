@@ -27,6 +27,14 @@ export function generateSampleData(baseDate: Date = new Date()): AppData {
       color: '#2D5541', // Forest Green
       targetGrade: 'A',
       notes: 'Focus on consensus proofs and 2-phase commit failure scenarios.',
+      units: [
+        { id: 'unit-cs301-1', subjectId: 'subj-cs301', unitNumber: 'Module 1', title: 'Time & Ordering', order: 1 },
+        { id: 'unit-cs301-2', subjectId: 'subj-cs301', unitNumber: 'Module 2', title: 'Consensus', order: 2 },
+        { id: 'unit-cs301-3', subjectId: 'subj-cs301', unitNumber: 'Module 3', title: 'Transactions', order: 3 },
+        { id: 'unit-cs301-4', subjectId: 'subj-cs301', unitNumber: 'Module 4', title: 'Storage Systems', order: 4 },
+        { id: 'unit-cs301-5', subjectId: 'subj-cs301', unitNumber: 'Module 5', title: 'Advanced Fault Tolerance', order: 5 },
+      ],
+      syllabusSource: 'sample',
       createdAt: pastDateStr(20),
     },
     {
@@ -40,6 +48,14 @@ export function generateSampleData(baseDate: Date = new Date()): AppData {
       color: '#D99B38', // Warm Amber
       targetGrade: 'A-',
       notes: 'Formula sheet permitted (1 double-sided A4). Practice Markov chain transition matrices.',
+      units: [
+        { id: 'unit-math204-1', subjectId: 'subj-math204', unitNumber: 'Unit 1', title: 'Probability Foundations', order: 1 },
+        { id: 'unit-math204-2', subjectId: 'subj-math204', unitNumber: 'Unit 2', title: 'Counting Processes', order: 2 },
+        { id: 'unit-math204-3', subjectId: 'subj-math204', unitNumber: 'Unit 3', title: 'Markov Chains', order: 3 },
+        { id: 'unit-math204-4', subjectId: 'subj-math204', unitNumber: 'Unit 4', title: 'Queueing Models', order: 4 },
+        { id: 'unit-math204-5', subjectId: 'subj-math204', unitNumber: 'Unit 5', title: 'Limit Theorems', order: 5 },
+      ],
+      syllabusSource: 'sample',
       createdAt: pastDateStr(22),
     },
     {
@@ -53,6 +69,14 @@ export function generateSampleData(baseDate: Date = new Date()): AppData {
       color: '#3B6B7A', // Slate Teal
       targetGrade: 'A',
       notes: 'Solid understanding of B+ trees; need quick recap on ARIES recovery protocol.',
+      units: [
+        { id: 'unit-cs315-1', subjectId: 'subj-cs315', unitNumber: 'Unit 1', title: 'Relational Data Model & SQL', order: 1 },
+        { id: 'unit-cs315-2', subjectId: 'subj-cs315', unitNumber: 'Unit 2', title: 'Normalization & Dependencies', order: 2 },
+        { id: 'unit-cs315-3', subjectId: 'subj-cs315', unitNumber: 'Unit 3', title: 'Transactions & Concurrency', order: 3 },
+        { id: 'unit-cs315-4', subjectId: 'subj-cs315', unitNumber: 'Unit 4', title: 'Storage Engines & B+ Trees', order: 4 },
+        { id: 'unit-cs315-5', subjectId: 'subj-cs315', unitNumber: 'Unit 5', title: 'Crash Recovery & Distributed DB', order: 5 },
+      ],
+      syllabusSource: 'sample',
       createdAt: pastDateStr(25),
     },
     {
@@ -66,6 +90,12 @@ export function generateSampleData(baseDate: Date = new Date()): AppData {
       color: '#765C83', // Muted Plum
       targetGrade: 'A',
       notes: 'Case study analysis and professional codes of conduct.',
+      units: [
+        { id: 'unit-eng202-1', subjectId: 'subj-eng202', unitNumber: 'Unit 1', title: 'Engineering Codes & Whistleblowing', order: 1 },
+        { id: 'unit-eng202-2', subjectId: 'subj-eng202', unitNumber: 'Unit 2', title: 'Data Privacy & Algorithmic Bias', order: 2 },
+        { id: 'unit-eng202-3', subjectId: 'subj-eng202', unitNumber: 'Unit 3', title: 'Technical Writing & Presentations', order: 3 },
+      ],
+      syllabusSource: 'sample',
       createdAt: pastDateStr(28),
     },
   ];

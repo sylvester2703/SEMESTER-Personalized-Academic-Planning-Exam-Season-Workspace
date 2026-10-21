@@ -192,3 +192,5 @@ export function calculateWorkloadEstimates(
   });
 }
 
+export * from './syllabus-analysis';
+

@@ -23,12 +23,14 @@ interface ExamsViewProps {
   onOpenNewSubject: () => void;
   onEditSubject: (subject: Subject) => void;
   onOpenNewTopic: (subjectId: string) => void;
+  onOpenSyllabusManager?: (subjectId: string) => void;
 }
 
 export function ExamsView({
   onOpenNewSubject,
   onEditSubject,
   onOpenNewTopic,
+  onOpenSyllabusManager,
 }: ExamsViewProps) {
   const { data, deleteSubject, setActiveView } = usePlanner();
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -196,12 +198,23 @@ export function ExamsView({
                       <Plus className="w-3 h-3" />
                       <span>Add topic</span>
                     </button>
+                    {onOpenSyllabusManager && (
+                      <>
+                        <span className="text-paper-300 dark:text-paper-700">•</span>
+                        <button
+                          onClick={() => onOpenSyllabusManager(subj.id)}
+                          className="text-xs text-ink-600 dark:text-ink-400 hover:text-ink-950 dark:hover:text-ink-100"
+                        >
+                          Import syllabus
+                        </button>
+                      </>
+                    )}
                     <span className="text-paper-300 dark:text-paper-700">•</span>
                     <button
                       onClick={() => setActiveView('readiness')}
                       className="text-xs text-ink-600 dark:text-ink-400 hover:text-ink-950 dark:hover:text-ink-100"
                     >
-                      View syllabus
+                      View roadmap
                     </button>
                   </div>
 

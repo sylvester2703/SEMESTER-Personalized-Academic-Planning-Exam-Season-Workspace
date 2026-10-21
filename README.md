@@ -98,7 +98,72 @@ When a student selects **"Build my study plan"**, SEMESTER initiates a calm, mul
 
 ---
 
-### 3.2 Deterministic, Collision-Free Scheduling Engine
+### 3.2 Syllabus-Aware Study Planning & Preparation Analysis
+
+SEMESTER transforms raw academic syllabuses into actionable study roadmaps, ensuring subjects are never treated as generic monolithic tasks.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          Multi-Channel Syllabus Input                           │
+│  ┌──────────────────┐ ┌──────────────────┐ ┌───────────────┐ ┌────────────────┐ │
+│  │  Paste Syllabus  │ │  Document Upload │ │ Curated Presets││ Manual Builder │ │
+│  │  • Regex Parser  │ │  • .txt, .md     │ │ • DBMS, OS    │ │ • Unit & Topic │ │
+│  │  • Auto-Detects  │ │  • Client-side   │ │ • Computer    │ │   hierarchy    │ │
+│  │    Units & Times │ │    Text-PDF      │ │   Networks    │ │ • Custom times │ │
+│  └────────┬─────────┘ └────────┬─────────┘ └───────┬───────┘ └───────┬────────┘ │
+└───────────┼────────────────────┼───────────────────┼─────────────────┼──────────┘
+            └────────────────────┼───────────────────┘                 │
+                                 ▼                                     │
+┌──────────────────────────────────────────────────────────────────────┴──────────┐
+│                   Live Structural Preview & Validation Modal                    │
+│           Interactive Review: Detected Units, Topics, Subtopics & Times         │
+│           Choice: Replace Existing Syllabus  OR  Append to Subject              │
+└────────────────────────────────────────┬────────────────────────────────────────┘
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│              Deterministic Syllabus Analysis & Workload Engine                  │
+│  • Unit & topic completion meters         • User vs. provisional estimate split │
+│  • Workload hours vs available study time • Realistic exam shortfall warnings   │
+└────────────────────────────────────────┬────────────────────────────────────────┘
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     Collapsible Unit Roadmap & Study Actions                    │
+│  • Unit Accordions with progress bars     • Direct "Start Focus" & "Recall"     │
+│  • Per-topic status cycles (4 states)     • Synchronized with Timetable & PDFs  │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### A. Multi-Channel Syllabus Ingestion
+- **Intelligent Text Parser (`lib/syllabus/parser.ts`)**:
+  - Automatically recognizes Unit, Module, Chapter, or Part headers across standard academic formats.
+  - Detects numbered and bulleted topics with nested subtopics.
+  - Extracts explicit duration notations like `(45m)`, `[2 hrs]`, `1.5 hours` and normalizes them into minutes.
+  - Infers priority flags (`[high]`, `[urgent]`, `[core]`, `[optional]`).
+- **Client-Side Document Ingestion**:
+  - Direct drag-and-drop or file selection for `.txt`, `.md`, `.json`, `.csv`, and text-based `.pdf` files.
+  - Extracted entirely inside the browser using clean stream parsing — zero uploads to remote servers.
+  - Gracefully detects scanned or raster-only PDFs and provides a helpful alert guiding the student to copy/paste text.
+- **Academic Sample Presets**:
+  - One-click preloads for university courses: *Database Management Systems (CS 315)*, *Operating Systems (CS 301)*, and *Computer Networks (CS 320)*.
+- **Manual Structure Builder**:
+  - Visual tree builder allowing students to add custom units, reorder topics, enter subtopic tags, and set duration estimates.
+
+#### B. Deterministic Syllabus Analysis Engine (`lib/calculations/syllabus-analysis.ts`)
+- Analyzes topic status distribution: *Not started*, *Learning*, *Needs revision*, and *Confident*.
+- Separates student-confirmed durations from **provisional estimates** (clearly marked with visual badges so students know which topics need review).
+- Computes total syllabus workload against the student's physical free study hours before the examination.
+- Generates transparent feasibility feedback and workload shortfall guidance without sugarcoating.
+
+#### C. Collapsible Unit Roadmap (`components/readiness/readiness-view.tsx`)
+- Structured unit accordions displaying unit title, topic count, and unit completion percentage.
+- One-click topic status cyclers to advance preparation states seamlessly.
+- Direct contextual action triggers:
+  - **"Start Study" / "Resume Study"**: Instantly launches the Focus Timer preset to the topic's estimated duration.
+  - **"Test Recall"**: Opens the Active Recall Tester modal to test memory retention.
+
+---
+
+### 3.3 Deterministic, Collision-Free Scheduling Engine
 
 SEMESTER uses a transparent, rule-based scheduling algorithm located in [`lib/scheduling/index.ts`](file:///c:/Users/Dell/OneDrive/Desktop/SEMESTER/lib/scheduling/index.ts).
 
@@ -113,7 +178,7 @@ SEMESTER uses a transparent, rule-based scheduling algorithm located in [`lib/sc
 
 ---
 
-### 3.3 Student-Centred Intelligence Modules
+### 3.4 Student-Centred Intelligence Modules
 
 SEMESTER avoids gimmicky "AI" marketing and provides practical, local deterministic intelligence:
 
@@ -155,7 +220,7 @@ SEMESTER avoids gimmicky "AI" marketing and provides practical, local determinis
 
 ---
 
-### 3.4 Print-Ready PDF Study Planner & Brand Identity
+### 3.5 Print-Ready PDF Study Planner & Brand Identity
 
 A client-side PDF generation engine built with `jspdf` and `jspdf-autotable` ([`lib/pdf/generate-pdf.ts`](file:///c:/Users/Dell/OneDrive/Desktop/SEMESTER/lib/pdf/generate-pdf.ts)):
 

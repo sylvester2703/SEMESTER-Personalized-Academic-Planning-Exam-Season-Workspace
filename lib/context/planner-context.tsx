@@ -13,6 +13,7 @@ import {
   RoutineCommitment,
   PersonalGoal,
   ExamDayChecklistItem,
+  SyllabusUnit,
 } from '@/types';
 import {
   loadAppData,
@@ -57,6 +58,20 @@ interface PlannerContextType {
   addSubject: (subject: Omit<Subject, 'id' | 'createdAt'>) => Subject;
   updateSubject: (id: string, updates: Partial<Subject>) => void;
   deleteSubject: (id: string) => void;
+
+  // Syllabus & Unit Actions
+  importSyllabusForSubject: (
+    subjectId: string,
+    units: SyllabusUnit[],
+    topics: Omit<Topic, 'id'>[],
+    originalText?: string,
+    source?: 'manual' | 'pasted' | 'uploaded' | 'sample',
+    replaceExisting?: boolean
+  ) => void;
+  addUnit: (subjectId: string, unit: Omit<SyllabusUnit, 'id' | 'subjectId'>) => SyllabusUnit;
+  updateUnit: (subjectId: string, unitId: string, updates: Partial<SyllabusUnit>) => void;
+  deleteUnit: (subjectId: string, unitId: string, deleteTopics?: boolean) => void;
+  applyProvisionalEstimates: (subjectId: string, defaultMinutes?: number) => void;
 
   // Topic Actions
   addTopic: (topic: Omit<Topic, 'id'>) => Topic;
@@ -211,6 +226,169 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       type: 'warning',
       title: 'Subject deleted',
       description: target ? `${target.name} and related topics were removed.` : undefined,
+    });
+  };
+
+  // SYLLABUS & UNIT ACTIONS
+  const importSyllabusForSubject = (
+    subjectId: string,
+    units: SyllabusUnit[],
+    newTopics: Omit<Topic, 'id'>[],
+    originalText?: string,
+    source?: 'manual' | 'pasted' | 'uploaded' | 'sample',
+    replaceExisting = false
+  ) => {
+    const mappedTopics: Topic[] = newTopics.map((t, idx) => ({
+      ...t,
+      id: `top-${subjectId}-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+    }));
+
+    setData((prev) => {
+      const updatedSubjects = prev.subjects.map((s) => {
+        if (s.id === subjectId) {
+          return {
+            ...s,
+            units,
+            originalSyllabusText: originalText || s.originalSyllabusText,
+            syllabusSource: source || s.syllabusSource || 'manual',
+          };
+        }
+        return s;
+      });
+
+      let updatedTopics: Topic[] = [];
+      if (replaceExisting) {
+        const completedSessionTopicIds = new Set(
+          prev.sessions.filter((sess) => sess.completed && sess.topicId).map((sess) => sess.topicId!)
+        );
+        const keptExisting = prev.topics.filter(
+          (t) => t.subjectId !== subjectId || completedSessionTopicIds.has(t.id)
+        );
+        updatedTopics = [...keptExisting, ...mappedTopics];
+      } else {
+        const existingTitles = new Set(
+          prev.topics.filter((t) => t.subjectId === subjectId).map((t) => t.title.toLowerCase())
+        );
+        const deduplicatedNew = mappedTopics.filter((t) => !existingTitles.has(t.title.toLowerCase()));
+        updatedTopics = [...prev.topics, ...deduplicatedNew];
+      }
+
+      return {
+        ...prev,
+        subjects: updatedSubjects,
+        topics: updatedTopics,
+      };
+    });
+
+    addToast({
+      type: 'success',
+      title: 'Syllabus Updated',
+      description: `Loaded ${units.length} unit(s) and ${newTopics.length} topic(s).`,
+    });
+  };
+
+  const addUnit = (subjectId: string, unitInput: Omit<SyllabusUnit, 'id' | 'subjectId'>): SyllabusUnit => {
+    const newUnit: SyllabusUnit = {
+      ...unitInput,
+      id: `unit-${subjectId}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      subjectId,
+    };
+
+    setData((prev) => ({
+      ...prev,
+      subjects: prev.subjects.map((s) => {
+        if (s.id === subjectId) {
+          const existingUnits = s.units || [];
+          return {
+            ...s,
+            units: [...existingUnits, newUnit],
+          };
+        }
+        return s;
+      }),
+    }));
+
+    addToast({
+      type: 'success',
+      title: 'Unit Added',
+      description: newUnit.title,
+    });
+
+    return newUnit;
+  };
+
+  const updateUnit = (subjectId: string, unitId: string, updates: Partial<SyllabusUnit>) => {
+    setData((prev) => ({
+      ...prev,
+      subjects: prev.subjects.map((s) => {
+        if (s.id === subjectId && s.units) {
+          return {
+            ...s,
+            units: s.units.map((u) => (u.id === unitId ? { ...u, ...updates } : u)),
+          };
+        }
+        return s;
+      }),
+      topics: prev.topics.map((t) => {
+        if (t.subjectId === subjectId && t.unitId === unitId) {
+          const unitTitle = updates.title || t.unitOrModule;
+          const unitNum = updates.unitNumber || '';
+          return {
+            ...t,
+            unitOrModule: unitNum ? `${unitNum}: ${unitTitle}` : unitTitle,
+          };
+        }
+        return t;
+      }),
+    }));
+  };
+
+  const deleteUnit = (subjectId: string, unitId: string, deleteTopics = false) => {
+    setData((prev) => ({
+      ...prev,
+      subjects: prev.subjects.map((s) => {
+        if (s.id === subjectId && s.units) {
+          return {
+            ...s,
+            units: s.units.filter((u) => u.id !== unitId),
+          };
+        }
+        return s;
+      }),
+      topics: deleteTopics
+        ? prev.topics.filter((t) => !(t.subjectId === subjectId && t.unitId === unitId))
+        : prev.topics.map((t) =>
+            t.subjectId === subjectId && t.unitId === unitId
+              ? { ...t, unitId: undefined, unitOrModule: 'General' }
+              : t
+          ),
+    }));
+
+    addToast({
+      type: 'info',
+      title: 'Unit deleted',
+    });
+  };
+
+  const applyProvisionalEstimates = (subjectId: string, defaultMinutes = 45) => {
+    setData((prev) => ({
+      ...prev,
+      topics: prev.topics.map((t) => {
+        if (t.subjectId === subjectId && (!t.estimatedMinutes || t.estimatedMinutes === 0)) {
+          return {
+            ...t,
+            estimatedMinutes: defaultMinutes,
+            isProvisionalEstimate: true,
+          };
+        }
+        return t;
+      }),
+    }));
+
+    addToast({
+      type: 'success',
+      title: 'Provisional estimates applied',
+      description: `Assigned provisional ${defaultMinutes}m estimates to unestimated topics.`,
     });
   };
 
@@ -713,6 +891,11 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         addSubject,
         updateSubject,
         deleteSubject,
+        importSyllabusForSubject,
+        addUnit,
+        updateUnit,
+        deleteUnit,
+        applyProvisionalEstimates,
         addTopic,
         updateTopic,
         deleteTopic,

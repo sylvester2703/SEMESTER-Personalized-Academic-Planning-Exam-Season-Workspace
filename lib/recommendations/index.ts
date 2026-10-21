@@ -209,9 +209,14 @@ export function calculateWhatShouldIStudyNow(
     || topics.find((t) => t.subjectId === primarySubj?.id);
 
   const daysToPrimary = primarySubj ? differenceInDays(parseISO(primarySubj.examDate), now) : 0;
-  let primaryTitle = primaryTopic ? `${primaryTopic.title}` : `Core Concepts in ${primarySubj?.name}`;
+  let primaryTitle = primaryTopic
+    ? primaryTopic.unitOrModule
+      ? `${primaryTopic.unitOrModule} — ${primaryTopic.title}`
+      : primaryTopic.title
+    : `Core Concepts in ${primarySubj?.name}`;
+
   let primaryExplanation = primaryTopic
-    ? `Exam in ${daysToPrimary <= 0 ? 'today' : `${daysToPrimary} days`}. Marked "${primaryTopic.status.replace('_', ' ')}". A ${primaryDuration}-minute focused block will reinforce key concepts.`
+    ? `You have ${availableMinutesNow}m available before ${nextCommitmentName ? `${nextCommitmentName} at ${nextCommitmentTime}` : 'your night rest'}. ${primarySubj.name} exam is in ${daysToPrimary <= 0 ? 'today' : `${daysToPrimary} days`}. ${primaryTopic.unitOrModule ? `In ${primaryTopic.unitOrModule}, this` : 'This'} topic is marked "${primaryTopic.status.replace('_', ' ')}". A ${primaryDuration}-minute session will advance your syllabus roadmap.`
     : `Nearest exam in ${daysToPrimary} days. Review past papers or synthesize chapter summaries.`;
 
   // 2. Alternative Recommendation: Different subject or practice session
@@ -221,8 +226,15 @@ export function calculateWhatShouldIStudyNow(
 
   const altDuration = Math.min(availableMinutesNow, 25);
   const daysToAlt = altSubj ? differenceInDays(parseISO(altSubj.examDate), now) : 0;
-  let altTitle = altTopic ? `Active Recall: ${altTopic.title}` : `Problem Solving for ${altSubj?.code || altSubj?.name}`;
-  let altExplanation = `Alternative option: Spend a fast ${altDuration}-minute sprint practicing recall without notes for ${altSubj?.name} (exam in ${daysToAlt} days).`;
+  let altTitle = altTopic
+    ? altTopic.unitOrModule
+      ? `Active Recall: ${altTopic.unitOrModule} — ${altTopic.title}`
+      : `Active Recall: ${altTopic.title}`
+    : `Problem Solving for ${altSubj?.code || altSubj?.name}`;
+
+  let altExplanation = altTopic
+    ? `Alternative option: Spend ${altDuration} minutes testing active retrieval without notes on "${altTopic.title}" (${altSubj?.code || altSubj?.name}, exam in ${daysToAlt} days).`
+    : `Alternative option: Quick ${altDuration}-minute problem solving block for ${altSubj?.name}.`;
 
   return {
     availableMinutesNow,

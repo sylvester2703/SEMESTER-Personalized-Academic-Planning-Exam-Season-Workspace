@@ -295,11 +295,19 @@ export function generateSuggestedWeeklyPlan(
 
         if (uncompleted.length > 0) {
           targetTopic = uncompleted[pointer % uncompleted.length];
-          sessionTitle = `${targetTopic.title} — Revision & Recall`;
+          const unitPrefix = targetTopic.unitOrModule ? `${targetTopic.unitOrModule} — ` : '';
+          const statusSuffix =
+            targetTopic.status === 'not_started'
+              ? 'Initial Study'
+              : targetTopic.status === 'learning'
+              ? 'Practice & Notes'
+              : 'Recall & Review';
+          sessionTitle = `${unitPrefix}${targetTopic.title} (${statusSuffix})`;
           topicIndices.set(subj.id, pointer + 1);
         } else if (target.allTopics.length > 0) {
           targetTopic = target.allTopics[pointer % target.allTopics.length];
-          sessionTitle = `${targetTopic.title} — Practice Problems`;
+          const unitPrefix = targetTopic.unitOrModule ? `${targetTopic.unitOrModule} — ` : '';
+          sessionTitle = `${unitPrefix}${targetTopic.title} (Retention Practice)`;
           topicIndices.set(subj.id, pointer + 1);
         } else {
           sessionTitle = `Exam Practice & Notes Review: ${subj.code || subj.name}`;
