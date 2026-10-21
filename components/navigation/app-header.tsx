@@ -133,7 +133,7 @@ export function AppHeader({
                 {onOpenPdfExport && (
                   <button
                     onClick={onOpenPdfExport}
-                    className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-800 dark:text-ink-200 text-xs font-medium hover:border-forest transition-all"
+                    className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 bg-paper-100 hover:bg-paper-200 dark:bg-paper-800 dark:hover:bg-paper-750 text-ink-900 dark:text-ink-100 hover:text-forest dark:hover:text-emerald-300 text-xs font-semibold transition-all cursor-pointer"
                   >
                     <FileDown className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />
                     <span>Download PDF</span>
@@ -165,7 +165,7 @@ export function AppHeader({
                 {onOpenPdfExport && (
                   <button
                     onClick={onOpenPdfExport}
-                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-850 hover:border-forest text-ink-800 dark:text-ink-200 text-xs font-medium shadow-2xs transition-all"
+                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 bg-paper-100 hover:bg-paper-200 dark:bg-paper-800 dark:hover:bg-paper-750 text-ink-900 dark:text-ink-100 hover:text-forest dark:hover:text-emerald-300 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
                     title="Download printable study planner PDF"
                   >
                     <FileDown className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />
@@ -277,7 +277,7 @@ export function AppHeader({
                     onOpenPdfExport();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-850 text-ink-800 dark:text-ink-200 text-sm font-medium"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-paper-300 dark:border-paper-700 bg-paper-100 hover:bg-paper-200 dark:bg-paper-800 dark:hover:bg-paper-750 text-ink-900 dark:text-ink-100 text-sm font-semibold transition-all cursor-pointer"
                 >
                   <FileDown className="w-4 h-4 text-forest dark:text-emerald-400" />
                   <span>Download Study Planner (PDF)</span>

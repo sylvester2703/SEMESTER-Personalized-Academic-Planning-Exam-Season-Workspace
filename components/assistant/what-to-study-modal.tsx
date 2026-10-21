@@ -90,7 +90,7 @@ export function WhatToStudyModal({
 
         {/* Empty State if no subjects */}
         {!primary && (
-          <div className="p-8 text-center bg-paper-50 dark:bg-paper-850 rounded-xl border border-paper-200 dark:border-paper-800">
+          <div className="p-8 text-center bg-white dark:bg-paper-800 rounded-xl border border-paper-300 dark:border-paper-700">
             <BookOpen className="w-8 h-8 text-ink-400 mx-auto mb-2" />
             <h4 className="font-semibold text-sm text-ink-900 dark:text-white mb-1">
               No subjects or syllabus entered
@@ -146,7 +146,7 @@ export function WhatToStudyModal({
 
             {/* Alternative Recommendation */}
             {alt && (
-              <div className="p-4 rounded-xl border border-paper-300 dark:border-paper-800 bg-paper-50/70 dark:bg-paper-850">
+              <div className="p-4 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400">
                     Alternative Option

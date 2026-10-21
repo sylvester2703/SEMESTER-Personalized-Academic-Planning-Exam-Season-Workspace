@@ -519,20 +519,20 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
               {commitments.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-paper-200 dark:border-paper-800 bg-paper-50 dark:bg-paper-850 text-xs"
+                  className="flex items-center justify-between p-3 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-xs shadow-2xs"
                 >
                   <div className="flex items-center gap-2.5">
                     <Shield className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0" />
                     <div>
-                      <div className="font-semibold text-ink-900 dark:text-white flex items-center gap-2">
+                      <div className="font-semibold text-ink-950 dark:text-white flex items-center gap-2">
                         <span>{c.name}</span>
                         {c.isFixed && (
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-forest/10 text-forest dark:text-emerald-300 font-mono">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-forest/10 dark:bg-emerald-950/70 text-forest dark:text-emerald-300 border border-forest/20 dark:border-emerald-700/50 font-mono font-bold">
                             FIXED
                           </span>
                         )}
                       </div>
-                      <div className="text-ink-500 font-mono text-[11px] mt-0.5">
+                      <div className="text-ink-600 dark:text-ink-300 font-mono text-[11px] mt-0.5 font-medium">
                         {c.startTime} – {c.endTime} ·{' '}
                         {c.daysOfWeek.map((d) => dayNames[d]).join(', ')}
                       </div>
@@ -540,7 +540,7 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                   </div>
                   <button
                     onClick={() => handleDeleteCommitment(c.id)}
-                    className="text-ink-400 hover:text-red-500 p-1"
+                    className="text-ink-400 hover:text-red-500 dark:text-ink-400 dark:hover:text-red-400 p-1 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -674,19 +674,19 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                   {draftSubjects.map((s, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-2.5 rounded-lg border border-paper-200 dark:border-paper-800 bg-paper-50 dark:bg-paper-850 text-xs"
+                      className="flex items-center justify-between p-2.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-xs shadow-2xs"
                     >
                       <div>
-                        <span className="font-semibold text-ink-900 dark:text-white">
+                        <span className="font-semibold text-ink-950 dark:text-white">
                           {s.name} ({s.code || 'Course'})
                         </span>
-                        <span className="text-ink-500 ml-2 font-mono">
+                        <span className="text-ink-600 dark:text-ink-300 ml-2 font-mono text-[11px]">
                           Exam: {s.examDate} · {s.difficulty} difficulty · {s.topics.length} topics
                         </span>
                       </div>
                       <button
                         onClick={() => setDraftSubjects(draftSubjects.filter((_, i) => i !== idx))}
-                        className="text-ink-400 hover:text-red-500 p-1"
+                        className="text-ink-400 hover:text-red-500 dark:text-ink-400 dark:hover:text-red-400 p-1 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -784,10 +784,10 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
               <button
                 type="button"
                 onClick={handleAddDraftSubject}
-                className="px-4 py-2 rounded-lg bg-paper-200 dark:bg-paper-700 hover:bg-forest hover:text-white text-xs font-semibold text-ink-800 dark:text-ink-100 transition-all flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-lg bg-forest hover:bg-forest-hover text-white dark:bg-emerald-700 dark:hover:bg-emerald-600 dark:text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add This Subject to List</span>
+                <span>+ Add This Subject to List</span>
               </button>
             </div>
 
@@ -828,9 +828,9 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
 
             <div className="space-y-4">
               {/* Daily study hours slider */}
-              <div className="p-4 rounded-xl border border-paper-300 dark:border-paper-800 bg-paper-50/70 dark:bg-paper-850">
+              <div className="p-4 rounded-xl border border-paper-300 dark:border-paper-700 bg-paper-100/90 dark:bg-paper-850 shadow-2xs">
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-xs font-semibold text-ink-800 dark:text-ink-200">
+                  <label className="text-xs font-bold text-ink-950 dark:text-ink-50 tracking-wide">
                     Realistic Daily Study Capacity
                   </label>
                   <span className="font-mono font-bold text-forest dark:text-emerald-400 text-sm">
@@ -844,9 +844,9 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                   step="0.5"
                   value={dailyHours}
                   onChange={(e) => setDailyHours(Number(e.target.value))}
-                  className="w-full accent-forest"
+                  className="w-full accent-forest dark:accent-emerald-400 cursor-pointer"
                 />
-                <span className="text-[11px] text-ink-500 block mt-1">
+                <span className="text-[11px] text-ink-600 dark:text-ink-300 font-medium block mt-1">
                   Excludes college and fixed commute hours. 3 to 4 hours is typical and highly sustainable.
                 </span>
               </div>
@@ -993,17 +993,17 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                 {previewPlan.slice(0, 8).map((sess) => (
                   <div
                     key={sess.id}
-                    className="flex items-center justify-between p-2 rounded bg-paper-50 dark:bg-paper-850 border border-paper-200 dark:border-paper-800 text-xs"
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-paper-800 border border-paper-300 dark:border-paper-700 text-xs shadow-2xs"
                   >
                     <div>
-                      <span className="font-semibold text-ink-900 dark:text-white">
+                      <span className="font-semibold text-ink-950 dark:text-white block">
                         {sess.title}
                       </span>
-                      <div className="text-[11px] font-mono text-ink-500">
+                      <div className="text-[11px] font-mono text-ink-600 dark:text-ink-300 mt-0.5">
                         {sess.date} · {sess.startTime} - {sess.endTime} ({sess.durationMinutes}m)
                       </div>
                     </div>
-                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-forest/10 text-forest dark:text-emerald-300">
+                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-forest/10 dark:bg-emerald-950/70 text-forest dark:text-emerald-300 border border-forest/20 dark:border-emerald-700/50 font-bold">
                       Planned
                     </span>
                   </div>

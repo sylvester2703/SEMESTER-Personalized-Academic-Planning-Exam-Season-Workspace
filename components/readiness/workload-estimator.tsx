@@ -53,8 +53,8 @@ export function WorkloadEstimator() {
               key={est.subjectId}
               className={`p-3.5 rounded-lg border transition-all ${
                 est.isFeasible
-                  ? 'border-paper-300 dark:border-paper-800 bg-paper-50/60 dark:bg-paper-850/60'
-                  : 'border-amber-300 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-950/20'
+                  ? 'border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 shadow-2xs'
+                  : 'border-amber-300 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30'
               }`}
             >
               <div className="flex items-start justify-between mb-2">

@@ -134,7 +134,7 @@ export function ActiveRecallModal({
         {/* STEP 1: PROMPT */}
         {step === 'prompt' && (
           <div className="space-y-4">
-            <div className="p-5 rounded-xl border border-paper-300 dark:border-paper-800 bg-paper-50 dark:bg-paper-850 text-center">
+            <div className="p-5 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-center shadow-2xs">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-400">
                 {subject?.name || 'Topic for Recall'}
               </span>

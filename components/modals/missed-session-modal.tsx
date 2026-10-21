@@ -111,7 +111,7 @@ export function MissedSessionModal({
         </p>
 
         {/* Missed session summary */}
-        <div className="p-3.5 rounded-lg border border-paper-300 dark:border-paper-800 bg-paper-50 dark:bg-paper-850 mb-5">
+        <div className="p-3.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 mb-5 shadow-2xs">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-400 mb-1">
             Missed Session
           </div>

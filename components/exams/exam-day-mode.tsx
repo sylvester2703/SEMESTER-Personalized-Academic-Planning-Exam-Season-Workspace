@@ -74,7 +74,7 @@ export function ExamDayMode() {
   };
 
   return (
-    <div className="bg-paper-100/80 dark:bg-paper-850 border border-forest/30 dark:border-emerald-900/50 rounded-xl p-5 mb-6 relative overflow-hidden shadow-card">
+    <div className="bg-paper-100/90 dark:bg-paper-800 border border-forest/30 dark:border-emerald-800/60 rounded-xl p-5 mb-6 relative overflow-hidden shadow-card">
       <div className="absolute top-0 left-0 w-1.5 h-full bg-forest dark:bg-emerald-500" />
 
       {/* Top Banner */}

@@ -90,10 +90,10 @@ export function TodayPlan({
               return (
                 <div
                   key={sess.id}
-                  className={`group flex items-start justify-between gap-3 p-3.5 rounded-md border transition-all ${
+                  className={`group flex items-start justify-between gap-3 p-3.5 rounded-lg border transition-all shadow-2xs ${
                     sess.completed
-                      ? 'bg-paper-100/60 dark:bg-paper-950/40 border-paper-200 dark:border-paper-800/80 opacity-75'
-                      : 'bg-paper-50 dark:bg-paper-850 border-paper-300/80 dark:border-paper-700 hover:border-forest/40 dark:hover:border-forest/60'
+                      ? 'bg-paper-100/60 dark:bg-paper-950/60 border-paper-200 dark:border-paper-800/80 opacity-75'
+                      : 'bg-white dark:bg-paper-800 border-paper-300 dark:border-paper-700 hover:border-forest/50 dark:hover:border-emerald-600/70'
                   }`}
                 >
                   {/* Left: Complete toggle */}
@@ -113,28 +113,28 @@ export function TodayPlan({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded text-white"
+                        className="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded text-white shadow-2xs"
                         style={{ backgroundColor: subj?.color || '#2D5541' }}
                       >
                         {subj?.code || subj?.name || 'Study'}
                       </span>
-                      <span className="text-xs text-ink-500 dark:text-ink-400 font-mono">
+                      <span className="text-xs text-ink-600 dark:text-ink-300 font-mono font-medium">
                         {sess.startTime} – {sess.endTime} ({sess.durationMinutes}m)
                       </span>
                     </div>
 
                     <h4
-                      className={`text-sm font-medium mt-1 leading-snug ${
+                      className={`text-sm font-semibold mt-1 leading-snug ${
                         sess.completed
                           ? 'line-through text-ink-500 dark:text-ink-400'
-                          : 'text-ink-900 dark:text-ink-50'
+                          : 'text-ink-950 dark:text-white'
                       }`}
                     >
                       {sess.title}
                     </h4>
 
                     {sess.notes && (
-                      <p className="text-xs text-ink-500 dark:text-ink-400 mt-1 line-clamp-1 italic">
+                      <p className="text-xs text-ink-600 dark:text-ink-300 mt-1 line-clamp-1 italic">
                         {sess.notes}
                       </p>
                     )}

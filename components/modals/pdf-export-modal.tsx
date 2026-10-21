@@ -156,29 +156,29 @@ export function PdfExportModal({ isOpen, onClose }: PdfExportModalProps) {
                   type="button"
                   className={`flex items-start gap-3 p-3 text-left rounded-lg border transition-all ${
                     isSelected
-                      ? 'border-forest dark:border-emerald-500 bg-forest/5 dark:bg-emerald-950/20 ring-1 ring-forest/30'
-                      : 'border-paper-300 dark:border-paper-800 hover:border-paper-400 dark:hover:border-paper-700 bg-paper-50/50 dark:bg-paper-850/50'
+                      ? 'border-forest dark:border-emerald-500 bg-forest/10 dark:bg-emerald-950/40 ring-1.5 ring-forest/30 dark:ring-emerald-500/30'
+                      : 'border-paper-300 dark:border-paper-700 hover:border-paper-400 dark:hover:border-paper-600 bg-white dark:bg-paper-800'
                   }`}
                 >
                   <div
                     className={`p-2 rounded-md shrink-0 mt-0.5 ${
                       isSelected
                         ? 'bg-forest text-white'
-                        : 'bg-paper-200 dark:bg-paper-800 text-ink-700 dark:text-ink-300'
+                        : 'bg-paper-200 dark:bg-paper-700 text-ink-800 dark:text-ink-200'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-sm text-ink-950 dark:text-ink-100">
+                      <span className="font-bold text-sm text-ink-950 dark:text-white">
                         {p.title}
                       </span>
-                      <span className="text-[11px] font-mono text-ink-400 dark:text-ink-500">
+                      <span className="text-[11px] font-mono text-ink-600 dark:text-ink-300 font-medium">
                         {p.pages}
                       </span>
                     </div>
-                    <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5 leading-relaxed">
+                    <p className="text-xs text-ink-700 dark:text-ink-200 mt-1 leading-relaxed font-normal">
                       {p.description}
                     </p>
                   </div>
@@ -189,25 +189,25 @@ export function PdfExportModal({ isOpen, onClose }: PdfExportModalProps) {
         </div>
 
         {/* Options */}
-        <div className="bg-paper-100/70 dark:bg-paper-850 rounded-lg p-3.5 border border-paper-200 dark:border-paper-800 mb-6 space-y-2.5">
-          <div className="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-1">
+        <div className="bg-paper-100/90 dark:bg-paper-800/90 rounded-lg p-3.5 border border-paper-300 dark:border-paper-700 mb-6 space-y-2.5">
+          <div className="text-xs font-bold uppercase tracking-wider text-ink-700 dark:text-ink-300 mb-1">
             Document Options
           </div>
-          <label className="flex items-center gap-2.5 text-xs text-ink-800 dark:text-ink-200 cursor-pointer">
+          <label className="flex items-center gap-2.5 text-xs font-medium text-ink-900 dark:text-ink-100 cursor-pointer">
             <input
               type="checkbox"
               checked={includeCompleted}
               onChange={(e) => setIncludeCompleted(e.target.checked)}
-              className="rounded border-paper-300 text-forest focus:ring-forest dark:border-paper-700"
+              className="rounded border-paper-300 text-forest focus:ring-forest dark:border-paper-700 cursor-pointer"
             />
             <span>Include completed study sessions</span>
           </label>
-          <label className="flex items-center gap-2.5 text-xs text-ink-800 dark:text-ink-200 cursor-pointer">
+          <label className="flex items-center gap-2.5 text-xs font-medium text-ink-900 dark:text-ink-100 cursor-pointer">
             <input
               type="checkbox"
               checked={includeNotes}
               onChange={(e) => setIncludeNotes(e.target.checked)}
-              className="rounded border-paper-300 text-forest focus:ring-forest dark:border-paper-700"
+              className="rounded border-paper-300 text-forest focus:ring-forest dark:border-paper-700 cursor-pointer"
             />
             <span>Include personal reflections and handwritten blank note lines</span>
           </label>
