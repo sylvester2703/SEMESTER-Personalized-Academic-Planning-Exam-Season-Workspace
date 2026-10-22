@@ -474,7 +474,7 @@ SEMESTER/
 ## 11. License & Intellectual Property Notice
 
 - **Software License**: Distributed under the [MIT License](LICENSE).
-- **Brand & Visual Identity**: SEMESTER and its original editorial design system, vector branding, and written content are authored for the SASC PixelRush UI/UX Build Challenge.
+- **Brand & Visual Identity**: SEMESTER and its original editorial design system, vector branding, and written content are authored for students and academic planners.
 
 > _“Every semester deserves a better plan.”_  
 > © 2026 SEMESTER · All rights reserved.

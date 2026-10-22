@@ -359,7 +359,7 @@ export function LandingView() {
             SEMESTER
           </span>
           <span className="ml-2">
-            • Built for the SASC PixelRush UI/UX Build Challenge.
+            • Academic planning &amp; exam season workspace.
           </span>
         </div>
 

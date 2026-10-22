@@ -169,8 +169,6 @@ export function AppFooter({ onOpenPdfExport, onOpenWhatToStudy }: AppFooterProps
               © {currentYear} SEMESTER. All rights reserved. Built for students with genuine academic empathy.
             </div>
             <div className="flex items-center gap-3">
-              <span>SASC PixelRush UI/UX Build Challenge</span>
-              <span>·</span>
               <span>Frontend-Only · Zero Remote Tracking</span>
             </div>
           </div>
