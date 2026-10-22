@@ -25,6 +25,12 @@ import {
   loadSamplePlanData,
 } from '@/lib/storage';
 import { generateSuggestedWeeklyPlan } from '@/lib/scheduling';
+import {
+  supabase,
+  syncWorkspaceToSupabase,
+  fetchUserWorkspaceFromSupabase,
+  signOutUser,
+} from '@/lib/supabase/service';
 
 export type ActiveView =
   | 'landing'
@@ -121,6 +127,15 @@ interface PlannerContextType {
   resetAllData: (useSample: boolean) => void;
   exportData: () => string;
   importData: (jsonStr: string) => { success: boolean; error?: string };
+
+  // Supabase Auth & Cloud Sync
+  currentUser: any | null;
+  syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
+  syncToCloud: () => Promise<boolean>;
+  restoreFromCloud: () => Promise<boolean>;
+  signOut: () => Promise<void>;
 }
 
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
@@ -131,7 +146,10 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const [activeView, setActiveView] = useState<ActiveView>('landing');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isRescueModalOpen, setIsRescueModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
 
   // Hydration & Theme initialization
   useEffect(() => {
@@ -141,6 +159,21 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
 
     // Apply theme
     applyThemeClass(loaded.profile.theme);
+
+    // Listen to Supabase Auth state
+    supabase.auth.getUser().then(({ data: authData }) => {
+      if (authData?.user) {
+        setCurrentUser(authData.user);
+      }
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user || null);
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
 
   // Sync to localStorage on changes
@@ -958,6 +991,63 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         resetAllData,
         exportData,
         importData,
+        currentUser,
+        syncStatus,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        syncToCloud: async () => {
+          if (!currentUser) {
+            setIsAuthModalOpen(true);
+            return false;
+          }
+          setSyncStatus('syncing');
+          const res = await syncWorkspaceToSupabase(data);
+          if (res.success) {
+            setSyncStatus('synced');
+            addToast({
+              type: 'success',
+              title: 'Workspace backed up',
+              description: 'Your subjects, timetable, and syllabus are securely synced to Supabase.',
+            });
+            return true;
+          } else {
+            setSyncStatus('error');
+            addToast({
+              type: 'error',
+              title: 'Sync failed',
+              description: res.error || 'Unable to sync to cloud.',
+            });
+            return false;
+          }
+        },
+        restoreFromCloud: async () => {
+          setSyncStatus('syncing');
+          const res = await fetchUserWorkspaceFromSupabase();
+          if (res.success && res.data) {
+            setData(res.data);
+            saveAppData(res.data);
+            setSyncStatus('synced');
+            addToast({
+              type: 'success',
+              title: 'Restored from cloud',
+              description: `Loaded ${res.data.subjects.length} subjects from your Supabase account.`,
+            });
+            return true;
+          } else {
+            setSyncStatus('idle');
+            return false;
+          }
+        },
+        signOut: async () => {
+          await signOutUser();
+          setCurrentUser(null);
+          setSyncStatus('idle');
+          addToast({
+            type: 'info',
+            title: 'Signed out',
+            description: 'You are now working in offline/guest mode.',
+          });
+        },
       }}
     >
       {children}

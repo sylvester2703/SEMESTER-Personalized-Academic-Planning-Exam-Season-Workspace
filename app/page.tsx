@@ -24,6 +24,7 @@ import { WhatToStudyModal } from '@/components/assistant/what-to-study-modal';
 import { MissedSessionModal } from '@/components/modals/missed-session-modal';
 import { ActiveRecallModal } from '@/components/recall/active-recall-modal';
 import { SyllabusManagerModal } from '@/components/syllabus/syllabus-manager-modal';
+import { AuthModal } from '@/components/auth/auth-modal';
 import { ToastContainer } from '@/components/shared/toast-container';
 import { StudySession, Subject, Topic } from '@/types';
 
@@ -34,6 +35,8 @@ function PlannerApp() {
     setActiveView,
     isOnboardingOpen,
     setIsOnboardingOpen,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
   } = usePlanner();
 
   // Modal states
@@ -258,6 +261,12 @@ function PlannerApp() {
 
       {/* Exam Survival Mode Modal */}
       <RescuePlanModal />
+
+      {/* Supabase Authentication & Cloud Sync Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
 
       {/* Mobile-First Bottom Navigation Bar */}
       <BottomNav

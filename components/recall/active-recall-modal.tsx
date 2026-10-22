@@ -33,6 +33,30 @@ export function ActiveRecallModal({
 
   const [step, setStep] = useState<'prompt' | 'rating' | 'done'>('prompt');
   const [selectedRating, setSelectedRating] = useState<'difficult' | 'okay' | 'easy' | null>(null);
+  const [aiQuestions, setAiQuestions] = useState<Array<{ question: string; answer: string }>>([]);
+
+  React.useEffect(() => {
+    if (isOpen && topic) {
+      setStep('prompt');
+      setSelectedRating(null);
+      fetch('/api/gemini/generate-practice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subjectName: subject?.name || 'Academic Course',
+          topicTitle: topic.title,
+          count: 1,
+        }),
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res.success && Array.isArray(res.questions) && res.questions.length > 0) {
+            setAiQuestions(res.questions);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen, topic?.id, subject?.name, topic?.title]);
 
   if (!isOpen || !topic) return null;
 
@@ -147,6 +171,24 @@ export function ActiveRecallModal({
                 </span>
               )}
             </div>
+
+            {aiQuestions.length > 0 && (
+              <div className="p-4 rounded-lg border border-forest/20 bg-forest/5 dark:bg-forest/15 space-y-1.5 text-xs">
+                <span className="font-semibold text-forest dark:text-emerald-400 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Gemini Practice Question:</span>
+                </span>
+                <p className="text-ink-900 dark:text-white font-medium">
+                  {aiQuestions[0].question}
+                </p>
+                <details className="mt-1 text-ink-600 dark:text-ink-300">
+                  <summary className="cursor-pointer text-forest dark:text-emerald-400 font-medium hover:underline text-[11px]">
+                    Reveal Model Answer
+                  </summary>
+                  <p className="mt-1 pt-1 border-t border-forest/10 text-xs">{aiQuestions[0].answer}</p>
+                </details>
+              </div>
+            )}
 
             <div className="p-4 rounded-lg border border-amber-500/20 bg-amber-500/5 text-xs text-ink-700 dark:text-ink-300 leading-relaxed">
               <span className="font-semibold text-amber-900 dark:text-amber-300 block mb-1">

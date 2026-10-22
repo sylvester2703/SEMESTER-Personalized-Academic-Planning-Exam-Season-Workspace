@@ -77,10 +77,56 @@ export function SyllabusManagerModal({
 
   const currentSubject = data.subjects.find((s) => s.id === selectedSubjectId) || data.subjects[0];
 
-  // Handle Text Parsing
-  const handleParseText = () => {
+  // Handle Text Parsing (Powered by Gemini AI with deterministic fallback)
+  const handleParseText = async () => {
     if (!pastedText.trim() || !selectedSubjectId) return;
     setIsParsing(true);
+    try {
+      const res = await fetch('/api/gemini/analyze-syllabus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: pastedText }),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.units) && data.units.length > 0) {
+        const mappedUnits: SyllabusUnit[] = data.units.map((u: any, idx: number) => ({
+          id: `ai-unit-${selectedSubjectId}-${idx + 1}-${Date.now()}`,
+          subjectId: selectedSubjectId,
+          unitNumber: u.unitNumber || idx + 1,
+          title: u.title || `Unit ${idx + 1}`,
+          order: idx + 1,
+        }));
+
+        const mappedTopics: Omit<Topic, 'id'>[] = [];
+        data.units.forEach((u: any, uIdx: number) => {
+          const parentUnitId = mappedUnits[uIdx].id;
+          (u.topics || []).forEach((t: any, tIdx: number) => {
+            mappedTopics.push({
+              subjectId: selectedSubjectId,
+              unitId: parentUnitId,
+              unitOrModule: `${u.unitNumber || uIdx + 1}: ${u.title}`,
+              title: t.title,
+              status: 'not_started',
+              estimatedMinutes: t.estimatedMinutes || 45,
+              isProvisionalEstimate: false,
+              priority: t.difficulty === 'difficult' ? 'high' : 'medium',
+              order: tIdx + 1,
+            });
+          });
+        });
+
+        setParsedUnits(mappedUnits);
+        setParsedTopics(mappedTopics);
+        setUnparsedLines([]);
+        setParseSummary(`AI-Parsed: Extracted ${mappedUnits.length} units and ${mappedTopics.length} topics via Gemini AI.`);
+        setIsParsing(false);
+        return;
+      }
+    } catch (err) {
+      console.warn('Gemini extraction failed or offline, falling back to local heuristic parser:', err);
+    }
+
+    // Local deterministic fallback
     const result = parseSyllabusText(pastedText, selectedSubjectId);
     setParsedUnits(result.units);
     setParsedTopics(result.topics);

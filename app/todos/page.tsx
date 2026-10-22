@@ -7,7 +7,16 @@ export default async function Page() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  const { data: todos, error } = await supabase.from('todos').select();
+  let todos: any = null;
+  let error: any = null;
+  try {
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out')), 2000));
+    const res: any = await Promise.race([supabase.from('todos').select(), timeoutPromise]);
+    todos = res.data;
+    error = res.error;
+  } catch (err: any) {
+    error = { message: err.message || 'Connection timed out' };
+  }
 
   return (
     <div className="p-8 max-w-xl mx-auto font-sans">
