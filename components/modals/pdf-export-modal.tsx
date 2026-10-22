@@ -109,6 +109,49 @@ export function PdfExportModal({ isOpen, onClose }: PdfExportModalProps) {
     }
   };
 
+  const [isExportingIcs, setIsExportingIcs] = useState<boolean>(false);
+
+  const handleExportIcs = async () => {
+    setIsExportingIcs(true);
+    try {
+      const res = await fetch('/api/calendar/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subjects: data.subjects,
+          sessions: data.sessions,
+          semesterTitle: data.profile.semesterName || 'SEMESTER Exam Plan',
+        }),
+      });
+
+      if (!res.ok) throw new Error('Export failed');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(data.profile.semesterName || 'semester-exam-plan').toLowerCase().replace(/\s+/g, '-')}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      addToast({
+        type: 'success',
+        title: 'Calendar (.ics) downloaded',
+        description: 'Import into Google Calendar, Apple Calendar, or Outlook for live exam reminders.',
+      });
+    } catch {
+      addToast({
+        type: 'error',
+        title: 'Calendar export failed',
+        description: 'Could not generate calendar feed. Please retry.',
+      });
+    } finally {
+      setIsExportingIcs(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-xs"
@@ -214,19 +257,30 @@ export function PdfExportModal({ isOpen, onClose }: PdfExportModalProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-paper-200 dark:border-paper-800">
-          <button
-            onClick={onClose}
-            type="button"
-            className="px-4 py-2 text-xs font-medium text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-white"
-          >
-            Cancel
-          </button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-3 border-t border-paper-200 dark:border-paper-800">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              type="button"
+              className="px-3.5 py-2 text-xs font-medium text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleExportIcs}
+              disabled={isExportingIcs}
+              type="button"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-paper-300 dark:border-paper-700 hover:bg-paper-100 dark:hover:bg-paper-800 text-ink-800 dark:text-ink-200 text-xs font-medium transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />
+              <span>{isExportingIcs ? 'Exporting...' : 'Export Calendar (.ics)'}</span>
+            </button>
+          </div>
           <button
             onClick={handleDownload}
             disabled={isGenerating}
             type="button"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-forest hover:bg-forest-dark text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-forest hover:bg-forest-dark text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
           >
             {isGenerating ? (
               <>
