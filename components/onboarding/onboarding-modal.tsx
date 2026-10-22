@@ -58,51 +58,12 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
   // STEP 1: Understand the Student
   const [displayName, setDisplayName] = useState('');
   const [academicYear, setAcademicYear] = useState('');
-  const [semesterTitle, setSemesterTitle] = useState('Final Semester Examinations');
-  const [primaryGoal, setPrimaryGoal] = useState('Complete the syllabus with consistent daily revision');
+  const [semesterTitle, setSemesterTitle] = useState('');
+  const [primaryGoal, setPrimaryGoal] = useState('');
   const [weeklyTopicTarget, setWeeklyTopicTarget] = useState<number>(6);
 
-  // STEP 2: Daily Routine & Fixed Commitments
-  const [commitments, setCommitments] = useState<RoutineCommitment[]>([
-    {
-      id: 'c-college',
-      name: 'College / University Hours',
-      category: 'college',
-      daysOfWeek: [1, 2, 3, 4, 5],
-      startTime: '09:00',
-      endTime: '16:00',
-      isFixed: true,
-      notes: 'Lectures and laboratory sessions',
-    },
-    {
-      id: 'c-sleep',
-      name: 'Sleep & Night Rest',
-      category: 'sleep',
-      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-      startTime: '23:00',
-      endTime: '07:00',
-      isFixed: true,
-      notes: 'Consistent restful sleep schedule',
-    },
-    {
-      id: 'c-commute',
-      name: 'Commute to/from Campus',
-      category: 'commute',
-      daysOfWeek: [1, 2, 3, 4, 5],
-      startTime: '08:00',
-      endTime: '09:00',
-      isFixed: true,
-    },
-    {
-      id: 'c-dinner',
-      name: 'Dinner & Family Time',
-      category: 'meals',
-      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-      startTime: '19:30',
-      endTime: '20:30',
-      isFixed: true,
-    },
-  ]);
+  // STEP 2: Daily Routine & Fixed Commitments (Zero dummy data)
+  const [commitments, setCommitments] = useState<RoutineCommitment[]>([]);
 
   // Form for adding a new commitment
   const [newCommName, setNewCommName] = useState('');
@@ -120,7 +81,7 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
   const [difficulty, setDifficulty] = useState<SubjectDifficulty>('moderate');
   const [prepLevel, setPrepLevel] = useState<SubjectPrepLevel>('in_progress');
   const [priority, setPriority] = useState<SubjectPriority>('high');
-  const [initialTopicNames, setInitialTopicNames] = useState('Core Architecture, Relational Queries, Practice Problems');
+  const [initialTopicNames, setInitialTopicNames] = useState('');
 
   const [draftSubjects, setDraftSubjects] = useState<
     {
@@ -176,6 +137,47 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
 
   const handleDeleteCommitment = (id: string) => {
     setCommitments(commitments.filter((c) => c.id !== id));
+  };
+
+  const handleAddPresetCommitment = (type: 'college' | 'sleep' | 'commute') => {
+    const presets: Record<string, Omit<RoutineCommitment, 'id'>> = {
+      college: {
+        name: 'College / University Hours',
+        category: 'college',
+        daysOfWeek: [1, 2, 3, 4, 5],
+        startTime: '09:00',
+        endTime: '16:00',
+        isFixed: true,
+        notes: 'Lectures and laboratory sessions',
+      },
+      sleep: {
+        name: 'Sleep & Night Rest',
+        category: 'sleep',
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        startTime: '23:00',
+        endTime: '07:00',
+        isFixed: true,
+        notes: 'Consistent restful sleep schedule',
+      },
+      commute: {
+        name: 'Commute to/from Campus',
+        category: 'commute',
+        daysOfWeek: [1, 2, 3, 4, 5],
+        startTime: '08:00',
+        endTime: '09:00',
+        isFixed: true,
+      },
+    };
+    const preset = presets[type];
+    if (preset) {
+      setCommitments((prev) => [
+        ...prev,
+        {
+          id: `c-${type}-${Date.now()}`,
+          ...preset,
+        },
+      ]);
+    }
   };
 
   // Add draft subject
@@ -468,6 +470,7 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                 </label>
                 <input
                   type="text"
+                  placeholder="e.g. Complete syllabus with consistent daily revision"
                   value={primaryGoal}
                   onChange={(e) => setPrimaryGoal(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-sm text-ink-900 dark:text-white focus:ring-1 focus:ring-forest"
@@ -480,6 +483,7 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                 </label>
                 <input
                   type="text"
+                  placeholder="e.g. Final Semester Examinations"
                   value={semesterTitle}
                   onChange={(e) => setSemesterTitle(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-sm text-ink-900 dark:text-white focus:ring-1 focus:ring-forest"
@@ -514,39 +518,71 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
               </p>
             </div>
 
-            {/* Existing commitments list */}
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              {commitments.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-xs shadow-2xs"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Shield className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0" />
-                    <div>
-                      <div className="font-semibold text-ink-950 dark:text-white flex items-center gap-2">
-                        <span>{c.name}</span>
-                        {c.isFixed && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-forest/10 dark:bg-emerald-950/70 text-forest dark:text-emerald-300 border border-forest/20 dark:border-emerald-700/50 font-mono font-bold">
-                            FIXED
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-ink-600 dark:text-ink-300 font-mono text-[11px] mt-0.5 font-medium">
-                        {c.startTime} – {c.endTime} ·{' '}
-                        {c.daysOfWeek.map((d) => dayNames[d]).join(', ')}
-                      </div>
-                    </div>
-                  </div>
+            {/* Existing commitments list or empty state */}
+            {commitments.length === 0 ? (
+              <div className="p-4 rounded-xl border border-dashed border-paper-300 dark:border-paper-700 bg-paper-50 dark:bg-paper-800/40 text-center space-y-2.5">
+                <p className="text-xs text-ink-600 dark:text-ink-400">
+                  No routine commitments added yet. Add your fixed commitments (college, sleep, commute) so study sessions are planned around your real schedule.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
+                  <span className="text-[11px] text-ink-500 font-medium mr-1">Quick presets:</span>
                   <button
-                    onClick={() => handleDeleteCommitment(c.id)}
-                    className="text-ink-400 hover:text-red-500 dark:text-ink-400 dark:hover:text-red-400 p-1 transition-colors"
+                    type="button"
+                    onClick={() => handleAddPresetCommitment('college')}
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-paper-200 dark:bg-paper-700 hover:bg-forest/10 hover:text-forest dark:hover:text-emerald-300 text-ink-700 dark:text-ink-300 transition-colors"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    + College (09:00–16:00)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPresetCommitment('sleep')}
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-paper-200 dark:bg-paper-700 hover:bg-forest/10 hover:text-forest dark:hover:text-emerald-300 text-ink-700 dark:text-ink-300 transition-colors"
+                  >
+                    + Sleep (23:00–07:00)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddPresetCommitment('commute')}
+                    className="text-[11px] px-2.5 py-1 rounded-full bg-paper-200 dark:bg-paper-700 hover:bg-forest/10 hover:text-forest dark:hover:text-emerald-300 text-ink-700 dark:text-ink-300 transition-colors"
+                  >
+                    + Commute (08:00–09:00)
                   </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {commitments.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between p-3 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-xs shadow-2xs"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Shield className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0" />
+                      <div>
+                        <div className="font-semibold text-ink-950 dark:text-white flex items-center gap-2">
+                          <span>{c.name}</span>
+                          {c.isFixed && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-forest/10 dark:bg-emerald-950/70 text-forest dark:text-emerald-300 border border-forest/20 dark:border-emerald-700/50 font-mono font-bold">
+                              FIXED
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-ink-600 dark:text-ink-300 font-mono text-[11px] mt-0.5 font-medium">
+                          {c.startTime} – {c.endTime} ·{' '}
+                          {c.daysOfWeek.map((d) => dayNames[d]).join(', ')}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteCommitment(c.id)}
+                      className="text-ink-400 hover:text-red-500 dark:text-ink-400 dark:hover:text-red-400 p-1 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Quick Add Commitment Form */}
             <div className="p-3.5 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 space-y-3">

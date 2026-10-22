@@ -5,19 +5,10 @@ import { usePlanner } from '@/lib/context/planner-context';
 import {
   Sparkles,
   ArrowRight,
-  Calendar,
-  Clock,
   Compass,
   MapPin,
-  Timer,
-  BarChart3,
   ShieldCheck,
-  CheckCircle2,
-  BookOpen,
-  Award,
-  Laptop,
 } from 'lucide-react';
-import { format } from 'date-fns';
 
 export function LandingView() {
   const { setActiveView, setIsOnboardingOpen } = usePlanner();
@@ -75,103 +66,6 @@ export function LandingView() {
         </div>
       </section>
 
-      {/* BELIEVABLE TIMETABLE PREVIEW FRAGMENT */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="rounded-xl border border-paper-300 dark:border-paper-800 bg-white dark:bg-paper-900 shadow-card p-5 sm:p-7 overflow-hidden">
-          {/* Header of preview */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-paper-200 dark:border-paper-800">
-            <div>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-forest dark:text-emerald-400">
-                Interactive Schedule Preview
-              </span>
-              <h3 className="font-serif text-xl font-semibold text-ink-950 dark:text-white mt-0.5">
-                Week 12 • Final Revision Block
-              </h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded text-[11px] bg-paper-100 dark:bg-paper-800 text-ink-600 dark:text-ink-400 font-mono">
-                Sample Schedule
-              </span>
-              <button
-                onClick={() => setActiveView('timetable')}
-                className="text-xs font-semibold text-forest dark:text-emerald-400 hover:underline flex items-center gap-1"
-              >
-                <span>Open full timetable</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Three representative realistic sessions */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-5">
-            <div className="p-4 rounded-lg border border-forest/30 bg-forest/5 dark:bg-forest/15 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-forest text-white">
-                    CS 301
-                  </span>
-                  <span className="text-xs font-mono text-ink-500">09:00 – 10:30</span>
-                </div>
-                <h4 className="font-serif text-base font-semibold text-ink-950 dark:text-white">
-                  Raft Consensus Traces & Leader Election
-                </h4>
-                <p className="text-xs text-ink-600 dark:text-ink-300 mt-1 line-clamp-2">
-                  Walk through unpartitioned election proofs and log matching edge cases.
-                </p>
-              </div>
-              <div className="mt-4 pt-2 border-t border-forest/20 flex items-center justify-between text-[11px] text-forest dark:text-emerald-300 font-medium">
-                <span className="flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Completed today</span>
-                </span>
-                <span>90m</span>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg border border-amber-border/70 bg-amber-light/40 dark:bg-amber-950/20 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-warm text-white">
-                    MATH 204
-                  </span>
-                  <span className="text-xs font-mono text-ink-500">14:30 – 16:00</span>
-                </div>
-                <h4 className="font-serif text-base font-semibold text-ink-950 dark:text-white">
-                  Markov Chains & Transition Matrices
-                </h4>
-                <p className="text-xs text-ink-600 dark:text-ink-300 mt-1 line-clamp-2">
-                  Practicing stationary distribution derivations from chapter 4 problem set.
-                </p>
-              </div>
-              <div className="mt-4 pt-2 border-t border-amber-border/50 flex items-center justify-between text-[11px] text-amber-badge dark:text-amber-300 font-medium">
-                <span>Scheduled next</span>
-                <span>90m</span>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-lg border border-paper-300 dark:border-paper-700 bg-paper-50 dark:bg-paper-800/60 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-700 text-white">
-                    CS 315
-                  </span>
-                  <span className="text-xs font-mono text-ink-500">Tomorrow • 10:00</span>
-                </div>
-                <h4 className="font-serif text-base font-semibold text-ink-950 dark:text-white">
-                  B+ Tree Index Concurrency & Lock Coupling
-                </h4>
-                <p className="text-xs text-ink-600 dark:text-ink-300 mt-1 line-clamp-2">
-                  Review buffer pool pinning protocols and tree reorganization rules.
-                </p>
-              </div>
-              <div className="mt-4 pt-2 border-t border-paper-200 dark:border-paper-700 flex items-center justify-between text-[11px] text-ink-500 font-medium">
-                <span>Upcoming</span>
-                <span>75m</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* HOW IT WORKS SECTION */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
@@ -357,9 +251,6 @@ export function LandingView() {
         <div>
           <span className="font-serif text-base font-semibold text-ink-950 dark:text-white">
             SEMESTER
-          </span>
-          <span className="ml-2">
-            • Academic planning &amp; exam season workspace.
           </span>
         </div>
 

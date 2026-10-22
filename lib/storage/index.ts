@@ -8,8 +8,8 @@ import {
 } from '@/types';
 import { generateSampleData } from './sample-data';
 
-const STORAGE_KEY = 'semester_planner_data_v3';
-const CURRENT_SCHEMA_VERSION = 3;
+const STORAGE_KEY = 'semester_planner_data_v4';
+const CURRENT_SCHEMA_VERSION = 4;
 
 export interface StorageResult<T> {
   success: boolean;
@@ -21,47 +21,6 @@ export interface StorageResult<T> {
  * Default empty data template for fresh setup (zero dummy data)
  */
 export function createDefaultEmptyData(): AppData {
-  const defaultRoutine: RoutineCommitment[] = [
-    {
-      id: 'comm-college-default',
-      name: 'College / University Hours',
-      category: 'college',
-      daysOfWeek: [1, 2, 3, 4, 5],
-      startTime: '09:00',
-      endTime: '16:00',
-      isFixed: true,
-      notes: 'Lectures and laboratory sessions.',
-    },
-    {
-      id: 'comm-sleep-default',
-      name: 'Sleep & Night Rest',
-      category: 'sleep',
-      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-      startTime: '23:00',
-      endTime: '07:00',
-      isFixed: true,
-      notes: 'Consistent restful sleep schedule.',
-    },
-    {
-      id: 'comm-commute-default',
-      name: 'Daily Commute',
-      category: 'commute',
-      daysOfWeek: [1, 2, 3, 4, 5],
-      startTime: '08:00',
-      endTime: '09:00',
-      isFixed: true,
-    },
-    {
-      id: 'comm-meals-default',
-      name: 'Meals & Breaks',
-      category: 'meals',
-      daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-      startTime: '19:30',
-      endTime: '20:30',
-      isFixed: true,
-    },
-  ];
-
   const defaultPreferences: StudyPreferences = {
     dailyAvailabilityHours: 3.5,
     preferredSessionDuration: 45,
@@ -75,14 +34,14 @@ export function createDefaultEmptyData(): AppData {
   return {
     version: CURRENT_SCHEMA_VERSION,
     profile: {
-      displayName: 'Student',
-      semesterName: 'Examination Series',
-      academicYearOrLevel: 'Undergraduate',
-      primaryGoalDescription: 'Finish syllabus units, balance routine, and prepare calmly.',
+      displayName: '',
+      semesterName: '',
+      academicYearOrLevel: '',
+      primaryGoalDescription: '',
       theme: 'system',
       onboarded: false,
       isSampleData: false,
-      routineCommitments: defaultRoutine,
+      routineCommitments: [],
       preferences: defaultPreferences,
       goals: [],
       examChecklist: [],
@@ -138,10 +97,9 @@ export function loadAppData(): AppData {
         theme: parsed.profile?.theme || 'system',
         onboarded: Boolean(parsed.profile?.onboarded),
         isSampleData: Boolean(parsed.profile?.isSampleData),
-        routineCommitments:
-          Array.isArray(parsed.profile?.routineCommitments) && parsed.profile.routineCommitments.length > 0
-            ? parsed.profile.routineCommitments
-            : defaultEmpty.profile.routineCommitments,
+        routineCommitments: Array.isArray(parsed.profile?.routineCommitments)
+          ? parsed.profile.routineCommitments
+          : [],
         preferences: {
           dailyAvailabilityHours: Number(parsed.profile?.preferences?.dailyAvailabilityHours || parsed.profile?.dailyAvailabilityHours) || 3.5,
           preferredSessionDuration: parsed.profile?.preferences?.preferredSessionDuration || 45,

@@ -168,9 +168,6 @@ export function AppFooter({ onOpenPdfExport, onOpenWhatToStudy }: AppFooterProps
             <div>
               © {currentYear} SEMESTER. All rights reserved. Built for students with genuine academic empathy.
             </div>
-            <div className="flex items-center gap-3">
-              <span>Frontend-Only · Zero Remote Tracking</span>
-            </div>
           </div>
         </div>
       </footer>
