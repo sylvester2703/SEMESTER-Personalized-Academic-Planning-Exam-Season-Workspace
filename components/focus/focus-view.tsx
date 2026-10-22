@@ -426,11 +426,55 @@ export function FocusView() {
         </div>
       )}
 
-      {/* Focus History summary */}
-      <div className="text-center text-xs text-ink-500 dark:text-ink-400">
-        <p>
-          Completed focus sessions automatically log into your Weekly Review and local study totals.
-        </p>
+      {/* Focus History summary & session log */}
+      <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-xl p-5 shadow-subtle space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-paper-200 dark:border-paper-800">
+          <h3 className="font-serif text-sm font-semibold text-ink-950 dark:text-ink-50 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-forest dark:text-emerald-400" />
+            <span>Focus History & Completed Sessions</span>
+          </h3>
+          <span className="text-xs font-mono text-ink-500 dark:text-ink-400">
+            {data.focusRecords.length} completed
+          </span>
+        </div>
+
+        {data.focusRecords.length === 0 ? (
+          <div className="py-6 text-center text-xs text-ink-500 dark:text-ink-400">
+            <p className="font-medium text-ink-700 dark:text-ink-300">
+              Your completed focus sessions will be recorded here.
+            </p>
+            <p className="mt-1 text-[11px]">
+              Start the 25-minute timer above. When the timer finishes, your session will be saved.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {data.focusRecords.slice(-5).reverse().map((rec) => {
+              const subj = data.subjects.find((s) => s.id === rec.subjectId);
+              return (
+                <div
+                  key={rec.id}
+                  className="flex items-center justify-between p-2.5 rounded-lg bg-paper-50 dark:bg-paper-800/60 border border-paper-200 dark:border-paper-750 text-xs"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <CheckCircle2 className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0" />
+                    <span className="font-medium text-ink-900 dark:text-ink-100 truncate">
+                      {subj ? subj.name : 'General Study Session'}
+                    </span>
+                    {rec.notes && (
+                      <span className="text-[11px] text-ink-500 dark:text-ink-400 truncate max-w-[180px]">
+                        — {rec.notes}
+                      </span>
+                    )}
+                  </div>
+                  <span className="font-mono text-forest dark:text-emerald-400 font-semibold shrink-0">
+                    +{rec.durationMinutes}m
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

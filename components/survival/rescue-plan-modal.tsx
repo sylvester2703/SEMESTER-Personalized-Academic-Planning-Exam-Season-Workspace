@@ -1,0 +1,433 @@
+'use client';
+
+import React, { useState, useMemo } from 'react';
+import { usePlanner } from '@/lib/context/planner-context';
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Sparkles,
+  X,
+  ArrowRight,
+  Flame,
+  ShieldCheck,
+  ChevronRight,
+  Info,
+} from 'lucide-react';
+import { parseISO, differenceInCalendarDays, format, addDays } from 'date-fns';
+import { Subject, Topic, StudySession } from '@/types';
+
+export function RescuePlanModal() {
+  const {
+    data,
+    isRescueModalOpen,
+    setIsRescueModalOpen,
+    addSession,
+    addToast,
+    setActiveView,
+  } = usePlanner();
+
+  const subjects = data.subjects;
+  const topics = data.topics;
+
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(() => {
+    return subjects[0]?.id || '';
+  });
+
+  const [dailyHours, setDailyHours] = useState<number>(4.0);
+  const [focusPriority, setFocusPriority] = useState<'high_yield_first' | 'balanced' | 'deep_revision'>('high_yield_first');
+  const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
+
+  // Find the selected subject
+  const currentSubject = subjects.find((s) => s.id === selectedSubjectId) || subjects[0];
+
+  // Subject topics
+  const subjectTopics = useMemo(() => {
+    if (!currentSubject) return [];
+    return topics.filter((t) => t.subjectId === currentSubject.id);
+  }, [topics, currentSubject]);
+
+  // Sync selected topics when subject changes
+  React.useEffect(() => {
+    if (subjectTopics.length > 0) {
+      // Default to unfinished or needs revision
+      const unfinished = subjectTopics
+        .filter((t) => t.status !== 'confident')
+        .map((t) => t.id);
+      setSelectedTopicIds(unfinished.length > 0 ? unfinished : subjectTopics.map((t) => t.id));
+    } else {
+      setSelectedTopicIds([]);
+    }
+  }, [currentSubject?.id, subjectTopics.length]);
+
+  // Calculations
+  const daysRemaining = useMemo(() => {
+    if (!currentSubject?.examDate) return 7;
+    try {
+      const examDate = parseISO(currentSubject.examDate);
+      const diff = differenceInCalendarDays(examDate, new Date());
+      return Math.max(diff, 1);
+    } catch {
+      return 7;
+    }
+  }, [currentSubject?.examDate]);
+
+  const totalAvailableHours = daysRemaining * dailyHours;
+
+  const estimatedTopicHours = useMemo(() => {
+    const chosenTopics = subjectTopics.filter((t) => selectedTopicIds.includes(t.id));
+    const totalMinutes = chosenTopics.reduce((acc, t) => acc + (t.estimatedMinutes || 60), 0);
+    return Math.round((totalMinutes / 60) * 10) / 10;
+  }, [subjectTopics, selectedTopicIds]);
+
+  const hoursFitRatio = totalAvailableHours > 0 ? estimatedTopicHours / totalAvailableHours : 1;
+  const isOverCapacity = hoursFitRatio > 1.0;
+
+  // Toggle individual topic in rescue pool
+  const toggleTopic = (id: string) => {
+    setSelectedTopicIds((prev) =>
+      prev.includes(id) ? prev.filter((tId) => tId !== id) : [...prev, id]
+    );
+  };
+
+  // Select all or high yield
+  const selectAllTopics = () => {
+    setSelectedTopicIds(subjectTopics.map((t) => t.id));
+  };
+
+  const selectHighYieldOnly = () => {
+    // Select first 50% or marked as difficult
+    const highYield = subjectTopics.filter(
+      (t) => t.difficultyRating === 'difficult' || t.status === 'not_started' || t.status === 'needs_revision'
+    );
+    setSelectedTopicIds(highYield.length > 0 ? highYield.map((t) => t.id) : subjectTopics.slice(0, 4).map((t) => t.id));
+  };
+
+  const handleApplyRescuePlan = () => {
+    if (!currentSubject) return;
+
+    const chosenTopics = subjectTopics.filter((t) => selectedTopicIds.includes(t.id));
+    if (chosenTopics.length === 0) {
+      addToast({
+        type: 'warning',
+        title: 'No topics selected',
+        description: 'Please select at least one syllabus topic to rescue.',
+      });
+      return;
+    }
+
+    const today = new Date();
+    const sessionDurationMinutes = 60;
+    const maxSessionsPerDay = Math.floor((dailyHours * 60) / sessionDurationMinutes);
+    let sessionCount = 0;
+    let topicIndex = 0;
+
+    // Distribute sessions across available days leading to exam
+    for (let d = 0; d < Math.min(daysRemaining, 14); d++) {
+      const sessionDate = format(addDays(today, d), 'yyyy-MM-dd');
+      let dailySessionCount = 0;
+
+      while (dailySessionCount < maxSessionsPerDay && topicIndex < chosenTopics.length) {
+        const topic = chosenTopics[topicIndex];
+        const startHour = 10 + dailySessionCount * 2; // e.g. 10:00, 12:00, 14:00
+        const startTime = `${String(startHour).padStart(2, '0')}:00`;
+        const endTime = `${String(startHour + 1).padStart(2, '0')}:00`;
+
+        addSession({
+          subjectId: currentSubject.id,
+          topicId: topic.id,
+          title: `[Rescue] ${topic.title}`,
+          date: sessionDate,
+          startTime,
+          endTime,
+          durationMinutes: sessionDurationMinutes,
+          completed: false,
+          isAutoGenerated: true,
+          notes: `Prioritized recovery session for upcoming exam on ${currentSubject.examDate || 'exam day'}.`,
+        });
+
+        sessionCount++;
+        dailySessionCount++;
+        topicIndex++;
+      }
+
+      if (topicIndex >= chosenTopics.length) break;
+    }
+
+    addToast({
+      type: 'success',
+      title: 'Rescue Plan Applied',
+      description: `Generated ${sessionCount} prioritized revision sessions into your timetable.`,
+    });
+
+    setIsRescueModalOpen(false);
+    setActiveView('timetable');
+  };
+
+  if (!isRescueModalOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/60 backdrop-blur-sm overflow-y-auto animate-fade-in">
+      <div className="relative w-full max-w-2xl bg-surface-primary dark:bg-surface-elevated rounded-2xl border border-line-border dark:border-paper-700 shadow-modal overflow-hidden my-8">
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-line-border dark:border-paper-700 flex items-center justify-between bg-surface-secondary dark:bg-surface-primary/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center justify-center">
+              <Flame className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-serif text-xl font-bold text-ink-900 dark:text-ink-50">
+                  Rescue My Exam Plan
+                </h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-medium border border-amber-300/40">
+                  Survival Mode
+                </span>
+              </div>
+              <p className="text-xs text-ink-500 dark:text-ink-300 mt-0.5">
+                Calm, honest recovery scheduling. Focus on high-yield topics without burnout or guilt.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsRescueModalOpen(false)}
+            className="p-2 text-ink-400 hover:text-ink-700 dark:text-ink-300 dark:hover:text-ink-100 rounded-lg hover:bg-surface-tertiary dark:hover:bg-paper-800 transition-colors"
+            aria-label="Close rescue modal"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+          {subjects.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-ink-600 dark:text-ink-300 mb-4">
+                You haven&apos;t added any subjects yet. Please add a subject first to use Exam Survival Mode.
+              </p>
+              <button
+                onClick={() => {
+                  setIsRescueModalOpen(false);
+                  setActiveView('exams');
+                }}
+                className="px-4 py-2 bg-brand-forest text-white rounded-lg text-sm font-medium hover:bg-brand-forest/90"
+              >
+                Go to Exams & Subjects
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Step 1: Select Subject & Target Exam */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-300">
+                  1. Select Target Examination
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {subjects.map((s) => {
+                    const isSelected = s.id === (currentSubject?.id || '');
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setSelectedSubjectId(s.id)}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          isSelected
+                            ? 'border-brand-forest bg-brand-forest/5 dark:bg-brand-forest/15 ring-1 ring-brand-forest text-ink-900 dark:text-ink-50'
+                            : 'border-line-border dark:border-paper-700 bg-surface-primary dark:bg-surface-elevated hover:bg-surface-secondary dark:hover:bg-paper-800 text-ink-700 dark:text-ink-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm truncate">{s.name}</span>
+                          {s.code && (
+                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-secondary dark:bg-paper-800 text-ink-500 dark:text-ink-300">
+                              {s.code}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2 text-xs text-ink-500 dark:text-ink-300">
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>{s.examDate ? format(parseISO(s.examDate), 'MMM d, yyyy') : 'No date set'}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Step 2: Available Daily Study Capacity */}
+              <div className="space-y-3 p-4 rounded-xl bg-surface-secondary dark:bg-paper-800 border border-line-border dark:border-paper-700">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-ink-700 dark:text-ink-200 flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-brand-forest dark:text-sage-300" />
+                    2. Daily Available Study Hours
+                  </label>
+                  <span className="text-sm font-bold font-mono text-brand-forest dark:text-sage-300 bg-brand-forest/10 dark:bg-brand-forest/20 px-2 py-0.5 rounded">
+                    {dailyHours.toFixed(1)} hrs / day
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="8"
+                  step="0.5"
+                  value={dailyHours}
+                  onChange={(e) => setDailyHours(parseFloat(e.target.value))}
+                  className="w-full accent-brand-forest cursor-pointer"
+                />
+                <div className="flex justify-between text-[11px] text-ink-500 dark:text-ink-300">
+                  <span>1.0 hr (Light)</span>
+                  <span>4.0 hrs (Balanced)</span>
+                  <span>8.0 hrs (Intensive)</span>
+                </div>
+              </div>
+
+              {/* Step 3: Capacity vs Workload Comparison */}
+              <div className="p-4 rounded-xl border border-line-border dark:border-paper-700 bg-surface-primary dark:bg-surface-elevated space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-300">
+                    Calculated Time Feasibility
+                  </span>
+                  <span
+                    className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
+                      isOverCapacity
+                        ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300/40'
+                        : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300/40'
+                    }`}
+                  >
+                    {isOverCapacity ? 'Triage Recommended' : 'Realistic Coverage'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="p-2.5 rounded-lg bg-surface-secondary dark:bg-paper-800">
+                    <div className="text-xs text-ink-500 dark:text-ink-300">Days to Exam</div>
+                    <div className="text-lg font-bold font-mono text-ink-900 dark:text-ink-50 mt-0.5">
+                      {daysRemaining} d
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-surface-secondary dark:bg-paper-800">
+                    <div className="text-xs text-ink-500 dark:text-ink-300">Available Time</div>
+                    <div className="text-lg font-bold font-mono text-ink-900 dark:text-ink-50 mt-0.5">
+                      {totalAvailableHours.toFixed(1)} hrs
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-surface-secondary dark:bg-paper-800">
+                    <div className="text-xs text-ink-500 dark:text-ink-300">Syllabus Needed</div>
+                    <div className="text-lg font-bold font-mono text-ink-900 dark:text-ink-50 mt-0.5">
+                      {estimatedTopicHours.toFixed(1)} hrs
+                    </div>
+                  </div>
+                </div>
+
+                {isOverCapacity ? (
+                  <div className="flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-lg border border-amber-200 dark:border-amber-900/50">
+                    <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>Honest Guidance:</strong> Total topics require more time than available.
+                      We recommend selecting <strong>High-Yield Only</strong> to lock in top scoring topics first.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-900/50">
+                    <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div>
+                      <strong>On Track:</strong> Your chosen topics fit comfortably within available hours with buffer for quick recall.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Step 4: Topic Selection & Triage */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-300">
+                    3. Select High-Yield Topics ({selectedTopicIds.length} of {subjectTopics.length})
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={selectHighYieldOnly}
+                      className="text-xs text-amber-700 dark:text-amber-300 hover:underline font-medium"
+                    >
+                      High-Yield Only
+                    </button>
+                    <span className="text-ink-300 dark:text-ink-600">|</span>
+                    <button
+                      type="button"
+                      onClick={selectAllTopics}
+                      className="text-xs text-brand-forest dark:text-sage-300 hover:underline font-medium"
+                    >
+                      Select All
+                    </button>
+                  </div>
+                </div>
+
+                {subjectTopics.length === 0 ? (
+                  <p className="text-xs text-ink-500 dark:text-ink-300 italic p-3 border border-dashed rounded-lg">
+                    No syllabus topics entered for this subject yet. You can still apply generic rescue revision blocks.
+                  </p>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto space-y-1.5 p-2 rounded-xl border border-line-border dark:border-paper-700 bg-surface-secondary dark:bg-paper-800">
+                    {subjectTopics.map((t) => {
+                      const isChecked = selectedTopicIds.includes(t.id);
+                      return (
+                        <label
+                          key={t.id}
+                          className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer text-xs transition-colors ${
+                            isChecked
+                              ? 'bg-surface-primary dark:bg-surface-elevated text-ink-900 dark:text-ink-100 shadow-sm'
+                              : 'text-ink-500 dark:text-ink-400 hover:bg-surface-tertiary dark:hover:bg-paper-750'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleTopic(t.id)}
+                            className="w-4 h-4 rounded text-brand-forest accent-brand-forest"
+                          />
+                          <span className="font-medium flex-1 truncate">{t.title}</span>
+                          {t.unitOrModule && (
+                            <span className="text-[10px] text-ink-400 dark:text-ink-400 truncate max-w-[100px]">
+                              {t.unitOrModule}
+                            </span>
+                          )}
+                          <span className="font-mono text-[10px] text-ink-500 dark:text-ink-300">
+                            {t.estimatedMinutes || 60}m
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="px-6 py-4 border-t border-line-border dark:border-paper-700 bg-surface-secondary dark:bg-surface-primary/50 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setIsRescueModalOpen(false)}
+            className="px-4 py-2 text-xs font-medium text-ink-600 dark:text-ink-300 hover:text-ink-900 dark:hover:text-ink-100"
+          >
+            Cancel
+          </button>
+
+          {subjects.length > 0 && (
+            <button
+              type="button"
+              onClick={handleApplyRescuePlan}
+              className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs flex items-center gap-2 shadow-sm transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Apply Rescue Schedule</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

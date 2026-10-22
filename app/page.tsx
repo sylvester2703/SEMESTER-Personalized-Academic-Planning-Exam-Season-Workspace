@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { PlannerProvider, usePlanner } from '@/lib/context/planner-context';
 import { AppHeader } from '@/components/navigation/app-header';
 import { AppFooter } from '@/components/navigation/app-footer';
+import { BottomNav } from '@/components/navigation/bottom-nav';
+import { RescuePlanModal } from '@/components/survival/rescue-plan-modal';
 import { LandingView } from '@/components/landing/landing-view';
 import { DashboardView } from '@/components/dashboard/dashboard-view';
 import { TimetableView } from '@/components/timetable/timetable-view';
@@ -120,8 +122,8 @@ function PlannerApp() {
         onOpenWhatToStudy={() => setWhatToStudyOpen(true)}
       />
 
-      {/* Main View Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      {/* Main View Area with mobile bottom nav safe-area padding */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 md:pb-8">
         {activeView === 'landing' && <LandingView />}
 
         {activeView === 'dashboard' && (
@@ -252,6 +254,15 @@ function PlannerApp() {
         isOpen={syllabusManagerOpen}
         onClose={() => setSyllabusManagerOpen(false)}
         targetSubjectId={initialSyllabusSubjId}
+      />
+
+      {/* Exam Survival Mode Modal */}
+      <RescuePlanModal />
+
+      {/* Mobile-First Bottom Navigation Bar */}
+      <BottomNav
+        onOpenPdfExport={() => setPdfModalOpen(true)}
+        onOpenWhatToStudy={() => setWhatToStudyOpen(true)}
       />
     </div>
   );

@@ -143,20 +143,20 @@ export function ReadinessView({
 
   if (data.subjects.length === 0) {
     return (
-      <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-10 text-center shadow-subtle">
-        <MapPin className="w-10 h-10 text-ink-400 mx-auto mb-3 opacity-60" />
-        <h3 className="font-serif text-xl font-medium text-ink-950 dark:text-ink-50">
-          No subjects created yet
+      <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-xl p-10 text-center shadow-subtle max-w-lg mx-auto">
+        <BookOpen className="w-12 h-12 text-forest/40 dark:text-emerald-400/40 mx-auto mb-3" />
+        <h3 className="font-serif text-xl font-bold text-ink-950 dark:text-ink-50">
+          Your syllabus will appear here once you add a subject and its topics.
         </h3>
-        <p className="text-xs text-ink-500 dark:text-ink-400 max-w-sm mx-auto mt-1 mb-5">
-          Add subjects first so you can organize your syllabus topics, units, and track confidence.
+        <p className="text-xs text-ink-600 dark:text-ink-400 max-w-sm mx-auto mt-2 mb-5">
+          Enter or paste course units to track preparation confidence, calculate realistic study workload, and generate focused revision sessions.
         </p>
         <button
           onClick={onOpenNewSubject}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-forest text-white text-xs font-medium shadow-sm hover:bg-forest-hover transition-colors"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-forest text-white text-xs font-semibold shadow-sm hover:bg-forest-hover transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Add Subject</span>
+          <span>Add first examination &amp; subject</span>
         </button>
       </div>
     );

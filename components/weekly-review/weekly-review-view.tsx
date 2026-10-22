@@ -51,6 +51,49 @@ export function WeeklyReviewView({ onOpenSuggestPlan }: WeeklyReviewViewProps) {
     startOfWeek(referenceDate, { weekStartsOn: 1 })
   );
 
+  // Intentional empty state: do not show zero-value charts when no underlying data exists
+  if (data.sessions.length === 0 && data.focusRecords.length === 0) {
+    return (
+      <div className="space-y-6 animate-in fade-in-50 duration-200">
+        <div className="pb-4 border-b border-paper-300 dark:border-paper-800">
+          <h2 className="font-serif text-2xl font-semibold text-ink-950 dark:text-ink-50">
+            Weekly Review & Study Insights
+          </h2>
+          <p className="text-xs text-ink-500 dark:text-ink-400 mt-1">
+            Grounded entirely in your actual recorded study activity.
+          </p>
+        </div>
+
+        <div className="p-8 sm:p-12 text-center rounded-2xl border border-dashed border-paper-300 dark:border-paper-750 bg-paper-50 dark:bg-paper-850/60 max-w-2xl mx-auto space-y-4">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 flex items-center justify-center">
+            <BarChart3 className="w-6 h-6" />
+          </div>
+          <h3 className="font-serif text-xl font-bold text-ink-950 dark:text-white">
+            Your study insights will appear after you complete some sessions.
+          </h3>
+          <p className="text-xs sm:text-sm text-ink-600 dark:text-ink-300 leading-relaxed max-w-md mx-auto">
+            SEMESTER doesn&apos;t invent fake streaks or fabricated productivity scores. Once you generate a plan and mark sessions or log focus time, comprehensive comparisons and completion trends will appear here.
+          </p>
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={onOpenSuggestPlan}
+              className="px-4 py-2.5 rounded-xl bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Generate 7-Day Plan</span>
+            </button>
+            <button
+              onClick={() => setActiveView('focus')}
+              className="px-4 py-2.5 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-800 dark:text-ink-200 text-xs font-medium hover:bg-paper-100"
+            >
+              <span>Start Focus Timer</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in-50 duration-200">
       {/* Header & Week Nav */}

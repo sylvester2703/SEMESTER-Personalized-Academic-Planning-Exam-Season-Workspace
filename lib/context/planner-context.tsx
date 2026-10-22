@@ -21,6 +21,8 @@ import {
   resetAppData,
   exportAppDataJson,
   importAppDataJson,
+  createDefaultEmptyData,
+  loadSamplePlanData,
 } from '@/lib/storage';
 import { generateSuggestedWeeklyPlan } from '@/lib/scheduling';
 
@@ -51,8 +53,12 @@ interface PlannerContextType {
   removeToast: (id: string) => void;
   isOnboardingOpen: boolean;
   setIsOnboardingOpen: (open: boolean) => void;
+  isRescueModalOpen: boolean;
+  setIsRescueModalOpen: (open: boolean) => void;
   theme: 'light' | 'dark' | 'system';
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  loadSamplePlan: () => void;
+  leaveSamplePlan: () => void;
 
   // Subject Actions
   addSubject: (subject: Omit<Subject, 'id' | 'createdAt'>) => Subject;
@@ -124,6 +130,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [activeView, setActiveView] = useState<ActiveView>('landing');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isRescueModalOpen, setIsRescueModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Hydration & Theme initialization
@@ -840,6 +847,30 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const loadSamplePlan = () => {
+    const sample = loadSamplePlanData();
+    setData(sample);
+    setActiveView('dashboard');
+    addToast({
+      type: 'info',
+      title: 'Sample Demonstration Active',
+      description: 'Viewing sample university courses and timetable. You can leave demo mode at any time.',
+    });
+  };
+
+  const leaveSamplePlan = () => {
+    const empty = createDefaultEmptyData();
+    saveAppData(empty);
+    setData(empty);
+    setActiveView('dashboard');
+    setIsOnboardingOpen(true);
+    addToast({
+      type: 'info',
+      title: 'Sample Mode Exited',
+      description: 'Welcome to your personal workspace. Let\'s build your actual study plan.',
+    });
+  };
+
   const resetAllData = (useSample: boolean) => {
     const fresh = resetAppData(useSample);
     setData(fresh);
@@ -886,8 +917,12 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         removeToast,
         isOnboardingOpen,
         setIsOnboardingOpen,
+        isRescueModalOpen,
+        setIsRescueModalOpen,
         theme: data.profile.theme,
         setTheme,
+        loadSamplePlan,
+        leaveSamplePlan,
         addSubject,
         updateSubject,
         deleteSubject,

@@ -8,8 +8,8 @@ import {
 } from '@/types';
 import { generateSampleData } from './sample-data';
 
-const STORAGE_KEY = 'semester_planner_data_v1';
-const CURRENT_SCHEMA_VERSION = 1;
+const STORAGE_KEY = 'semester_planner_data_v3';
+const CURRENT_SCHEMA_VERSION = 3;
 
 export interface StorageResult<T> {
   success: boolean;
@@ -18,7 +18,7 @@ export interface StorageResult<T> {
 }
 
 /**
- * Default empty data template for fresh setup
+ * Default empty data template for fresh setup (zero dummy data)
  */
 export function createDefaultEmptyData(): AppData {
   const defaultRoutine: RoutineCommitment[] = [
@@ -76,7 +76,7 @@ export function createDefaultEmptyData(): AppData {
     version: CURRENT_SCHEMA_VERSION,
     profile: {
       displayName: 'Student',
-      semesterName: 'Spring 2026 Examination Series',
+      semesterName: 'Examination Series',
       academicYearOrLevel: 'Undergraduate',
       primaryGoalDescription: 'Finish syllabus units, balance routine, and prepare calmly.',
       theme: 'system',
@@ -97,19 +97,19 @@ export function createDefaultEmptyData(): AppData {
 
 /**
  * Loads data from localStorage safely.
- * Returns sample data if first run and no data exists.
+ * Returns a clean, intentional empty state for fresh visitors.
  * Gracefully recovers from corrupted JSON.
  */
 export function loadAppData(): AppData {
   if (typeof window === 'undefined') {
-    return generateSampleData();
+    return createDefaultEmptyData();
   }
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      // First visit: initialize with realistic sample data so demo is immediate!
-      const initial = generateSampleData();
+      // First visit: initialize with a clean, intentional empty state (zero dummy data)
+      const initial = createDefaultEmptyData();
       saveAppData(initial);
       return initial;
     }
@@ -118,8 +118,8 @@ export function loadAppData(): AppData {
 
     // Schema version check & migration safety
     if (!parsed || typeof parsed !== 'object') {
-      console.warn('[SEMESTER Storage] Invalid object format. Resetting to safe defaults.');
-      const fallback = generateSampleData();
+      console.warn('[SEMESTER Storage] Invalid object format. Resetting to clean empty state.');
+      const fallback = createDefaultEmptyData();
       saveAppData(fallback);
       return fallback;
     }
@@ -166,8 +166,10 @@ export function loadAppData(): AppData {
     return sanitized;
   } catch (err) {
     console.error('[SEMESTER Storage] Failed to load data from localStorage:', err);
-    // Graceful recovery: return default sample data
-    return generateSampleData();
+    // Graceful recovery: return clean empty state
+    const fallback = createDefaultEmptyData();
+    saveAppData(fallback);
+    return fallback;
   }
 }
 
@@ -188,10 +190,20 @@ export function saveAppData(data: AppData): boolean {
 }
 
 /**
+ * Loads sample plan demonstration data explicitly when user opts in
+ */
+export function loadSamplePlanData(): AppData {
+  const sample = generateSampleData();
+  sample.profile.isSampleData = true;
+  saveAppData(sample);
+  return sample;
+}
+
+/**
  * Resets local data to clean empty state or fresh sample data
  */
-export function resetAppData(useSampleData: boolean = true): AppData {
-  const fresh = useSampleData ? generateSampleData() : createDefaultEmptyData();
+export function resetAppData(useSampleData: boolean = false): AppData {
+  const fresh = useSampleData ? loadSamplePlanData() : createDefaultEmptyData();
   saveAppData(fresh);
   return fresh;
 }

@@ -242,24 +242,29 @@ export async function generateStudyPlannerPdf(
 
       const sortedExams = [...data.subjects].sort((a, b) => new Date(a.examDate).getTime() - new Date(b.examDate).getTime());
 
-      const examRows = sortedExams.map((s) => {
-        const d = parseISO(s.examDate);
-        const daysLeft = differenceInDays(d, now);
-        const subjTopics = data.topics.filter((t) => t.subjectId === s.id);
-        const confidentCount = subjTopics.filter((t) => t.status === 'confident').length;
-        const prepStr = subjTopics.length > 0 ? `${confidentCount}/${subjTopics.length} confident` : '0 topics';
+      const examRows = sortedExams.length > 0
+        ? sortedExams.map((s) => {
+            const d = parseISO(s.examDate);
+            const daysLeft = differenceInDays(d, now);
+            const subjTopics = data.topics.filter((t) => t.subjectId === s.id);
+            const confidentCount = subjTopics.filter((t) => t.status === 'confident').length;
+            const prepStr = subjTopics.length > 0 ? `${confidentCount}/${subjTopics.length} confident` : '0 topics';
 
-        let daysLabel = daysLeft === 0 ? 'TODAY' : daysLeft < 0 ? 'Passed' : `${daysLeft} days`;
+            let daysLabel = daysLeft === 0 ? 'TODAY' : daysLeft < 0 ? 'Passed' : `${daysLeft} days`;
 
-        return [
-          `${s.name}\n(${s.code || 'No code'})`,
-          `${format(d, 'EEE, dd MMM yyyy')}\n${s.examTime || '09:00'}`,
-          daysLabel,
-          s.examLocation || 'Campus Hall',
-          (s.difficulty || 'Moderate').toUpperCase(),
-          prepStr,
-        ];
-      });
+            return [
+              `${s.name}\n(${s.code || 'No code'})`,
+              `${format(d, 'EEE, dd MMM yyyy')}\n${s.examTime || '09:00'}`,
+              daysLabel,
+              s.examLocation || 'Campus Hall',
+              (s.difficulty || 'Moderate').toUpperCase(),
+              prepStr,
+            ];
+          })
+        : [
+            ['[Write Subject 1 Name]', 'DD/MM/YYYY\n09:00', '___ days', 'Main Exam Hall', 'MODERATE', '[  ] Not started'],
+            ['[Write Subject 2 Name]', 'DD/MM/YYYY\n09:00', '___ days', 'Main Exam Hall', 'MODERATE', '[  ] Not started'],
+          ];
 
       autoTable(doc, {
         startY: 40,
@@ -311,25 +316,32 @@ export async function generateStudyPlannerPdf(
         return cmp !== 0 ? cmp : a.startTime.localeCompare(b.startTime);
       });
 
-      const sessionRows = sortedSessions.map((sess) => {
-        const subj = data.subjects.find((s) => s.id === sess.subjectId);
-        const dateFormatted = format(parseISO(sess.date), 'EEE, dd MMM');
-        const timeRange = `${sess.startTime} - ${sess.endTime} (${sess.durationMinutes}m)`;
-        const statusBox = sess.completed ? '[X] Done' : '[  ] Open';
+      const sessionRows = sortedSessions.length > 0
+        ? sortedSessions.map((sess) => {
+            const subj = data.subjects.find((s) => s.id === sess.subjectId);
+            const dateFormatted = format(parseISO(sess.date), 'EEE, dd MMM');
+            const timeRange = `${sess.startTime} - ${sess.endTime} (${sess.durationMinutes}m)`;
+            const statusBox = sess.completed ? '[X] Done' : '[  ] Open';
 
-        return [
-          dateFormatted,
-          timeRange,
-          subj?.code || subj?.name || 'Study',
-          sess.title,
-          statusBox,
-        ];
-      });
+            return [
+              dateFormatted,
+              timeRange,
+              subj?.code || subj?.name || 'Study',
+              sess.title,
+              statusBox,
+            ];
+          })
+        : [
+            ['Monday', '09:00 - 10:00 (60m)', 'Subject 1', '[Blank Study Slot - write task here]', '[  ] Open'],
+            ['Tuesday', '10:00 - 11:00 (60m)', 'Subject 2', '[Blank Study Slot - write task here]', '[  ] Open'],
+            ['Wednesday', '14:00 - 15:00 (60m)', 'Subject 1', '[Blank Study Slot - write task here]', '[  ] Open'],
+            ['Thursday', '16:00 - 17:00 (60m)', 'Subject 2', '[Blank Study Slot - write task here]', '[  ] Open'],
+          ];
 
       autoTable(doc, {
         startY: 40,
         head: [['Date', 'Time & Duration', 'Subject', 'Focus Topic / Planned Task', 'Status']],
-        body: sessionRows.length > 0 ? sessionRows : [['No study sessions currently scheduled.', '', '', '', '']],
+        body: sessionRows,
         theme: 'plain',
         headStyles: {
           fillColor: COLORS.forestGreen,
@@ -355,66 +367,77 @@ export async function generateStudyPlannerPdf(
       });
 
       // PAGE 4: SYLLABUS & REVISION TRACKER
-      if (data.topics.length > 0) {
-        doc.addPage();
-        doc.setFont('times', 'bold');
-        doc.setFontSize(18);
-        doc.setTextColor(...COLORS.deepInk);
-        doc.text('Syllabus & Active Recall Tracker', 14, 28);
+      doc.addPage();
+      doc.setFont('times', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(...COLORS.deepInk);
+      doc.text('Syllabus & Active Recall Tracker', 14, 28);
 
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8.5);
-        doc.setTextColor(...COLORS.subtleGray);
-        doc.text('Topic-by-topic tracking. Check off topics as you advance them to Confident.', 14, 34);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...COLORS.subtleGray);
+      doc.text(
+        data.topics.length > 0
+          ? 'Topic-by-topic tracking. Check off topics as you advance them to Confident.'
+          : 'Printable blank syllabus tracker. Write your units and topics below.',
+        14,
+        34
+      );
 
-        const topicRows = data.topics.map((t) => {
-          const subj = data.subjects.find((s) => s.id === t.subjectId);
-          const statusLabels: Record<string, string> = {
-            confident: 'Confident',
-            learning: 'Learning',
-            needs_revision: 'Needs Revision',
-            not_started: 'Not Started',
-          };
-          const box = t.status === 'confident' ? '[X]' : '[  ]';
-          return [
-            box,
-            subj?.code || subj?.name || 'General',
-            t.unitOrModule || 'General',
-            t.title,
-            statusLabels[t.status] || 'Not Started',
-            `${t.estimatedMinutes || 45} mins`,
+      const topicRows = data.topics.length > 0
+        ? data.topics.map((t) => {
+            const subj = data.subjects.find((s) => s.id === t.subjectId);
+            const statusLabels: Record<string, string> = {
+              confident: 'Confident',
+              learning: 'Learning',
+              needs_revision: 'Needs Revision',
+              not_started: 'Not Started',
+            };
+            const box = t.status === 'confident' ? '[X]' : '[  ]';
+            return [
+              box,
+              subj?.code || subj?.name || 'General',
+              t.unitOrModule || 'General',
+              t.title,
+              statusLabels[t.status] || 'Not Started',
+              `${t.estimatedMinutes || 45} mins`,
+            ];
+          })
+        : [
+            ['[  ]', '[Subject 1]', 'Unit 1', '[Write topic title here]', 'Not Started', '45 mins'],
+            ['[  ]', '[Subject 1]', 'Unit 1', '[Write topic title here]', 'Not Started', '45 mins'],
+            ['[  ]', '[Subject 2]', 'Unit 1', '[Write topic title here]', 'Not Started', '45 mins'],
+            ['[  ]', '[Subject 2]', 'Unit 2', '[Write topic title here]', 'Not Started', '45 mins'],
           ];
-        });
 
-        autoTable(doc, {
-          startY: 40,
-          head: [['Done', 'Subject', 'Module / Unit', 'Topic Title', 'Status', 'Est. Time']],
-          body: topicRows,
-          theme: 'plain',
-          headStyles: {
-            fillColor: COLORS.forestGreen,
-            textColor: 255,
-            fontStyle: 'bold',
-            fontSize: 8,
-            cellPadding: 3,
-          },
-          bodyStyles: {
-            fontSize: 7.5,
-            textColor: COLORS.deepInk,
-            cellPadding: 2.5,
-            lineColor: COLORS.mutedSage,
-            lineWidth: 0.2,
-          },
-          columnStyles: {
-            0: { cellWidth: 14, fontStyle: 'bold' },
-            1: { cellWidth: 26 },
-            2: { cellWidth: 34 },
-            3: { cellWidth: 68 },
-            4: { cellWidth: 26 },
-            5: { cellWidth: 20 },
-          },
-        });
-      }
+      autoTable(doc, {
+        startY: 40,
+        head: [['Done', 'Subject', 'Module / Unit', 'Topic Title', 'Status', 'Est. Time']],
+        body: topicRows,
+        theme: 'plain',
+        headStyles: {
+          fillColor: COLORS.forestGreen,
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 8,
+          cellPadding: 3,
+        },
+        bodyStyles: {
+          fontSize: 7.5,
+          textColor: COLORS.deepInk,
+          cellPadding: 2.5,
+          lineColor: COLORS.mutedSage,
+          lineWidth: 0.2,
+        },
+        columnStyles: {
+          0: { cellWidth: 14, fontStyle: 'bold' },
+          1: { cellWidth: 26 },
+          2: { cellWidth: 34 },
+          3: { cellWidth: 68 },
+          4: { cellWidth: 26 },
+          5: { cellWidth: 20 },
+        },
+      });
 
       // PAGE 5: EXAM PREPARATION CHECKLIST & REFLECTION NOTES
       doc.addPage();

@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { usePlanner, ActiveView } from '@/lib/context/planner-context';
 import {
   LayoutDashboard,
   Calendar,
   GraduationCap,
-  MapPin,
   Timer,
   BarChart3,
   Settings,
@@ -16,10 +15,12 @@ import {
   Menu,
   X,
   Sparkles,
-  ArrowRight,
   BookOpen,
   FileDown,
   Compass,
+  ChevronDown,
+  Flame,
+  RotateCcw,
 } from 'lucide-react';
 
 interface AppHeaderProps {
@@ -42,24 +43,38 @@ export function AppHeader({
     theme,
     setTheme,
     setIsOnboardingOpen,
-    resetAllData,
+    setIsRescueModalOpen,
+    leaveSamplePlan,
   } = usePlanner();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const navItems: { view: ActiveView; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { view: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { view: 'timetable', label: 'Timetable', icon: Calendar },
-    { view: 'exams', label: 'Exams & Subjects', icon: GraduationCap },
-    { view: 'readiness', label: 'Readiness Map', icon: MapPin },
-    { view: 'focus', label: 'Focus Mode', icon: Timer },
-    { view: 'weekly-review', label: 'Weekly Review', icon: BarChart3 },
-    { view: 'settings', label: 'Settings', icon: Settings },
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setMoreDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // 5 Primary Desktop Tabs per Section 6 Specification
+  const primaryNavItems: { view: ActiveView; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { view: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+    { view: 'timetable', label: 'My Plan', icon: Calendar },
+    { view: 'readiness', label: 'Syllabus', icon: BookOpen },
+    { view: 'exams', label: 'Exams', icon: GraduationCap },
+    { view: 'focus', label: 'Focus', icon: Timer },
   ];
 
   const handleNavClick = (view: ActiveView) => {
     setActiveView(view);
     setMobileMenuOpen(false);
+    setMoreDropdownOpen(false);
   };
 
   const cycleTheme = () => {
@@ -68,12 +83,15 @@ export function AppHeader({
     else setTheme('light');
   };
 
+  const isSecondaryActive =
+    activeView === 'weekly-review' || activeView === 'settings';
+
   return (
     <header className="sticky top-0 z-40 bg-paper-100/90 dark:bg-paper-950/90 backdrop-blur-md border-b border-paper-300/80 dark:border-paper-800 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Wordmark with Vector Geometric Mark */}
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => setActiveView('landing')}
               className="text-left group flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest rounded-sm"
@@ -94,17 +112,32 @@ export function AppHeader({
               </div>
             </button>
 
-            {/* Desktop Navigation Tabs */}
+            {/* Sample Demonstration Indicator */}
+            {data.profile.isSampleData && (
+              <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-300 text-[11px] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span>Sample Demo</span>
+                <button
+                  onClick={leaveSamplePlan}
+                  className="ml-1 text-[11px] font-semibold underline hover:text-amber-700 dark:hover:text-amber-100"
+                  title="Clear demonstration data and start your personal plan"
+                >
+                  Start My Plan
+                </button>
+              </div>
+            )}
+
+            {/* Desktop Navigation Tabs: 5 Primary Destinations */}
             {activeView !== 'landing' && (
-              <nav className="hidden lg:flex items-center gap-1 ml-1" aria-label="Main Navigation">
-                {navItems.map((item) => {
+              <nav className="hidden md:flex items-center gap-1 ml-2" aria-label="Main Navigation">
+                {primaryNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeView === item.view;
                   return (
                     <button
                       key={item.view}
                       onClick={() => handleNavClick(item.view)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                         isActive
                           ? 'bg-paper-200 dark:bg-paper-800 text-forest dark:text-emerald-400 font-semibold shadow-subtle'
                           : 'text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-ink-100 hover:bg-paper-200/50 dark:hover:bg-paper-900'
@@ -115,13 +148,107 @@ export function AppHeader({
                     </button>
                   );
                 })}
+
+                {/* Desktop "More" Dropdown Menu */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      isSecondaryActive || moreDropdownOpen
+                        ? 'bg-paper-200 dark:bg-paper-800 text-forest dark:text-emerald-400 font-semibold'
+                        : 'text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-ink-100 hover:bg-paper-200/50 dark:hover:bg-paper-900'
+                    }`}
+                    aria-expanded={moreDropdownOpen}
+                    aria-haspopup="true"
+                  >
+                    <span>More</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${moreDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {moreDropdownOpen && (
+                    <div className="absolute left-0 mt-1 w-56 rounded-xl border border-paper-300 dark:border-paper-750 bg-paper-100 dark:bg-paper-900 shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                      <button
+                        onClick={() => handleNavClick('weekly-review')}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors ${
+                          activeView === 'weekly-review'
+                            ? 'bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 font-semibold'
+                            : 'text-ink-700 dark:text-ink-300 hover:bg-paper-200 dark:hover:bg-paper-800'
+                        }`}
+                      >
+                        <BarChart3 className="w-4 h-4 text-forest dark:text-emerald-400" />
+                        <div>
+                          <div className="font-medium">Weekly Review</div>
+                          <div className="text-[10px] text-ink-500 dark:text-ink-400">Study completion insights</div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setMoreDropdownOpen(false);
+                          setIsRescueModalOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left text-amber-900 dark:text-amber-300 hover:bg-amber-500/10 dark:hover:bg-amber-500/20 transition-colors"
+                      >
+                        <Flame className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <div>
+                          <div className="font-semibold flex items-center gap-1.5">
+                            Rescue My Plan
+                            <span className="text-[9px] px-1 py-0.2 rounded bg-amber-200/60 dark:bg-amber-900/60">Survival</span>
+                          </div>
+                          <div className="text-[10px] text-amber-700/80 dark:text-amber-400/80">Exam triage recovery</div>
+                        </div>
+                      </button>
+
+                      <div className="my-1 border-t border-paper-200 dark:border-paper-800" />
+
+                      {onOpenWhatToStudy && (
+                        <button
+                          onClick={() => {
+                            setMoreDropdownOpen(false);
+                            onOpenWhatToStudy();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left text-ink-700 dark:text-ink-300 hover:bg-paper-200 dark:hover:bg-paper-800 transition-colors"
+                        >
+                          <Compass className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                          <span>What Should I Study Now?</span>
+                        </button>
+                      )}
+
+                      {onOpenPdfExport && (
+                        <button
+                          onClick={() => {
+                            setMoreDropdownOpen(false);
+                            onOpenPdfExport();
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left text-ink-700 dark:text-ink-300 hover:bg-paper-200 dark:hover:bg-paper-800 transition-colors"
+                        >
+                          <FileDown className="w-4 h-4 text-forest dark:text-emerald-400" />
+                          <span>Download Study Planner (PDF)</span>
+                        </button>
+                      )}
+
+                      <div className="my-1 border-t border-paper-200 dark:border-paper-800" />
+
+                      <button
+                        onClick={() => handleNavClick('settings')}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors ${
+                          activeView === 'settings'
+                            ? 'bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 font-semibold'
+                            : 'text-ink-700 dark:text-ink-300 hover:bg-paper-200 dark:hover:bg-paper-800'
+                        }`}
+                      >
+                        <Settings className="w-4 h-4 text-ink-500 dark:text-ink-300" />
+                        <span>Settings & Daily Routine</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </nav>
             )}
           </div>
 
           {/* Right Action Bar */}
           <div className="flex items-center gap-2">
-            {/* If on Landing page */}
             {activeView === 'landing' ? (
               <div className="flex items-center gap-2.5">
                 <button
@@ -153,7 +280,7 @@ export function AppHeader({
                 {onOpenWhatToStudy && (
                   <button
                     onClick={onOpenWhatToStudy}
-                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-semibold transition-all shadow-2xs"
+                    className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-semibold transition-all shadow-2xs"
                     title="Calculate next best study task"
                   >
                     <Compass className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -165,11 +292,11 @@ export function AppHeader({
                 {onOpenPdfExport && (
                   <button
                     onClick={onOpenPdfExport}
-                    className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 bg-paper-100 hover:bg-paper-200 dark:bg-paper-800 dark:hover:bg-paper-750 text-ink-900 dark:text-ink-100 hover:text-forest dark:hover:text-emerald-300 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+                    className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 bg-paper-100 hover:bg-paper-200 dark:bg-paper-800 dark:hover:bg-paper-750 text-ink-900 dark:text-ink-100 hover:text-forest dark:hover:text-emerald-300 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
                     title="Download printable study planner PDF"
                   >
                     <FileDown className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />
-                    <span>Download PDF</span>
+                    <span>PDF</span>
                   </button>
                 )}
 
@@ -201,10 +328,10 @@ export function AppHeader({
               )}
             </button>
 
-            {/* Mobile menu toggle */}
+            {/* Mobile menu toggle (secondary access on mobile if needed) */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-1.5 rounded-md text-ink-600 dark:text-ink-300 hover:text-ink-900 dark:hover:text-white hover:bg-paper-200 dark:hover:bg-paper-800 transition-colors"
+              className="md:hidden p-1.5 rounded-md text-ink-600 dark:text-ink-300 hover:text-ink-900 dark:hover:text-white hover:bg-paper-200 dark:hover:bg-paper-800 transition-colors"
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileMenuOpen}
             >
@@ -214,9 +341,9 @@ export function AppHeader({
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer */}
+      {/* Mobile Drawer Menu fallback */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-paper-300 dark:border-paper-800 bg-paper-100 dark:bg-paper-950 px-4 pt-3 pb-6 animate-in slide-in-from-top-2 duration-150">
+        <div className="md:hidden border-t border-paper-300 dark:border-paper-800 bg-paper-100 dark:bg-paper-950 px-4 pt-3 pb-6 animate-in slide-in-from-top-2 duration-150">
           <div className="flex flex-col gap-1.5">
             <button
               onClick={() => handleNavClick('landing')}
@@ -232,10 +359,10 @@ export function AppHeader({
 
             <div className="my-1 border-t border-paper-300/60 dark:border-paper-800" />
             <p className="px-3 text-[10px] uppercase tracking-wider font-semibold text-ink-400">
-              Planner Workspace
+              Planner Destinations
             </p>
 
-            {navItems.map((item) => {
+            {primaryNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeView === item.view;
               return (
@@ -257,44 +384,55 @@ export function AppHeader({
               );
             })}
 
-            <div className="mt-3 pt-3 border-t border-paper-300 dark:border-paper-800 flex flex-col gap-2">
-              {onOpenWhatToStudy && (
-                <button
-                  onClick={() => {
-                    onOpenWhatToStudy();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-amber-500/10 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-sm font-semibold"
-                >
-                  <Compass className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span>What should I study now?</span>
-                </button>
-              )}
+            <div className="my-1 border-t border-paper-300/60 dark:border-paper-800" />
 
-              {onOpenPdfExport && (
-                <button
-                  onClick={() => {
-                    onOpenPdfExport();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-paper-300 dark:border-paper-700 bg-paper-100 hover:bg-paper-200 dark:bg-paper-800 dark:hover:bg-paper-750 text-ink-900 dark:text-ink-100 text-sm font-semibold transition-all cursor-pointer"
-                >
-                  <FileDown className="w-4 h-4 text-forest dark:text-emerald-400" />
-                  <span>Download Study Planner (PDF)</span>
-                </button>
-              )}
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setIsRescueModalOpen(true);
+              }}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-amber-900 dark:text-amber-300 bg-amber-500/10"
+            >
+              <Flame className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span>Rescue My Exam Plan (Survival Mode)</span>
+            </button>
 
+            <button
+              onClick={() => handleNavClick('weekly-review')}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium ${
+                activeView === 'weekly-review'
+                  ? 'bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 font-semibold'
+                  : 'text-ink-700 dark:text-ink-300'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Weekly Review</span>
+            </button>
+
+            <button
+              onClick={() => handleNavClick('settings')}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium ${
+                activeView === 'settings'
+                  ? 'bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 font-semibold'
+                  : 'text-ink-700 dark:text-ink-300'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings & Daily Routine</span>
+            </button>
+
+            {data.profile.isSampleData && (
               <button
                 onClick={() => {
-                  setIsOnboardingOpen(true);
                   setMobileMenuOpen(false);
+                  leaveSamplePlan();
                 }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-forest text-white text-sm font-medium"
+                className="mt-2 w-full py-2 px-3 rounded-md bg-forest text-white text-xs font-medium flex items-center justify-center gap-2"
               >
-                <Sparkles className="w-4 h-4" />
-                <span>Build New Study Plan</span>
+                <RotateCcw className="w-4 h-4" />
+                <span>Leave Sample Mode & Start My Plan</span>
               </button>
-            </div>
+            )}
           </div>
         </div>
       )}

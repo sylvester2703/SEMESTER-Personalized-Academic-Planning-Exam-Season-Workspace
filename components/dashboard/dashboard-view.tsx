@@ -7,7 +7,7 @@ import { SmartNextStepCard } from './smart-next-step';
 import { TodayPlan } from './today-plan';
 import { ReadinessOverview } from './readiness-overview';
 import { ExamDayMode } from '../exams/exam-day-mode';
-import { calculateWeeklyReview, calculateSubjectReadiness } from '@/lib/calculations';
+import { calculateWeeklyReview } from '@/lib/calculations';
 import { StudySession } from '@/types';
 import {
   Calendar,
@@ -18,10 +18,13 @@ import {
   Timer,
   BookOpen,
   Info,
-  RefreshCw,
   Compass,
   FileDown,
-  HeartHandshake,
+  RotateCcw,
+  ArrowRight,
+  Shield,
+  Clock,
+  GraduationCap,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -45,47 +48,141 @@ export function DashboardView({
     data,
     setActiveView,
     toggleSessionComplete,
-    resetAllData,
+    setIsOnboardingOpen,
+    loadSamplePlan,
+    leaveSamplePlan,
   } = usePlanner();
 
+  const subjects = data.subjects;
+  const topics = data.topics;
+  const sessions = data.sessions;
+  const focusRecords = data.focusRecords;
+
+  const totalTopics = topics.length;
+  const confidentTopics = topics.filter((t) => t.status === 'confident').length;
+  const overallReadiness = totalTopics > 0 ? Math.round((confidentTopics / totalTopics) * 100) : 0;
+
   const weeklyMetrics = calculateWeeklyReview(
-    data.sessions,
-    data.focusRecords,
-    data.subjects,
-    data.topics,
+    sessions,
+    focusRecords,
+    subjects,
+    topics,
     new Date()
   );
 
-  const totalTopics = data.topics.length;
-  const confidentTopics = data.topics.filter((t) => t.status === 'confident').length;
-  const overallReadiness = totalTopics > 0 ? Math.round((confidentTopics / totalTopics) * 100) : 0;
+  // If new user with ZERO subjects, show intentional, beautiful empty state
+  if (subjects.length === 0) {
+    return (
+      <div className="space-y-8 animate-in fade-in-50 duration-200">
+        {/* Intentional Empty State Container */}
+        <div className="rounded-2xl border border-paper-300 dark:border-paper-750 bg-paper-50 dark:bg-paper-900/60 p-6 sm:p-10 shadow-sm">
+          <div className="max-w-2xl mx-auto text-center space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-semibold tracking-wide">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Clean Academic Workspace</span>
+            </div>
 
+            <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-ink-950 dark:text-white">
+              Your semester starts here.
+            </h1>
+
+            <p className="text-sm sm:text-base text-ink-600 dark:text-ink-300 leading-relaxed">
+              Add your exams, tell us about your daily routine, and we&apos;ll help you build a study plan that fits your life. No fabricated data, no unrealistic 12-hour cramming sessions.
+            </p>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={() => setIsOnboardingOpen(true)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-forest hover:bg-forest-hover text-white text-sm font-semibold shadow-md transition-all cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Build my study plan</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={loadSamplePlan}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-800 dark:text-ink-200 hover:bg-paper-100 dark:hover:bg-paper-750 text-sm font-medium transition-all cursor-pointer"
+              >
+                <span>Explore a sample plan</span>
+              </button>
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={onOpenNewSubject}
+                className="text-xs text-forest dark:text-emerald-400 hover:underline font-medium"
+              >
+                Or + manually add a single examination
+              </button>
+            </div>
+          </div>
+
+          {/* 3 Core Architecture Pillars */}
+          <div className="mt-10 pt-8 border-t border-paper-200 dark:border-paper-800 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+            <div className="p-4 rounded-xl bg-white dark:bg-paper-850 border border-paper-200 dark:border-paper-750 shadow-2xs">
+              <div className="w-8 h-8 rounded-lg bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 flex items-center justify-center mb-3">
+                <Clock className="w-4 h-4" />
+              </div>
+              <h3 className="font-serif font-bold text-ink-950 dark:text-white text-sm">
+                1. Your Real Routine
+              </h3>
+              <p className="text-xs text-ink-600 dark:text-ink-400 mt-1 leading-relaxed">
+                Protect sleep, lectures, meals, and commute hours. Study sessions are only placed in your genuine availability.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white dark:bg-paper-850 border border-paper-200 dark:border-paper-750 shadow-2xs">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 flex items-center justify-center mb-3">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <h3 className="font-serif font-bold text-ink-950 dark:text-white text-sm">
+                2. Syllabus Intelligence
+              </h3>
+              <p className="text-xs text-ink-600 dark:text-ink-400 mt-1 leading-relaxed">
+                Enter or paste course units. Track topics by confidence level, estimated duration, and active recall needs.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-white dark:bg-paper-850 border border-paper-200 dark:border-paper-750 shadow-2xs">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 flex items-center justify-center mb-3">
+                <Shield className="w-4 h-4" />
+              </div>
+              <h3 className="font-serif font-bold text-ink-950 dark:text-white text-sm">
+                3. Calm Next Actions
+              </h3>
+              <p className="text-xs text-ink-600 dark:text-ink-400 mt-1 leading-relaxed">
+                Zero guilt or shame. Transparent local scheduling highlights exactly what to revise next without panic.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Populated state with personal or sample data
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in-50 duration-200">
       {/* Imminent Exam-Day Preparation Mode if exam within 48h */}
       <ExamDayMode />
 
-      {/* Sample Data Callout Banner if active */}
+      {/* Persistent Sample Demonstration Banner */}
       {data.profile.isSampleData && (
-        <div className="p-3.5 rounded-lg border border-amber-border/80 bg-amber-light/80 dark:bg-amber-950/30 dark:border-amber-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-950 dark:text-amber-200">
-          <div className="flex items-center gap-2">
-            <Info className="w-4 h-4 text-amber-badge shrink-0" />
+        <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-500/10 dark:bg-amber-950/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-950 dark:text-amber-200 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <div>
-              <span className="font-semibold">Demonstration Mode:</span> You are viewing realistic editable sample data for four university courses.
+              <span className="font-bold">Demonstration Mode Active:</span> You are exploring a sample university course plan with 4 subjects.
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => resetAllData(false)}
-              className="px-2.5 py-1 rounded bg-white dark:bg-paper-900 border border-amber-border hover:bg-amber-50 text-ink-800 dark:text-ink-100 font-medium transition-colors"
+              onClick={leaveSamplePlan}
+              className="px-3 py-1.5 rounded-lg bg-forest hover:bg-forest-hover text-white font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-sm"
             >
-              Clear to clean slate
-            </button>
-            <button
-              onClick={() => resetAllData(true)}
-              className="px-2.5 py-1 rounded bg-amber-warm/20 hover:bg-amber-warm/30 font-medium transition-colors"
-            >
-              Reset sample data
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Leave Demo & Start My Real Plan</span>
             </button>
           </div>
         </div>
@@ -117,7 +214,7 @@ export function DashboardView({
 
       {/* Hero Exam Countdown */}
       <CountdownBanner
-        subjects={data.subjects}
+        subjects={subjects}
         onAddSubject={onOpenNewSubject}
         onViewSubject={(id) => setActiveView('exams')}
       />
@@ -140,29 +237,29 @@ export function DashboardView({
         </div>
 
         <SmartNextStepCard
-          subjects={data.subjects}
-          topics={data.topics}
-          sessions={data.sessions}
+          subjects={subjects}
+          topics={topics}
+          sessions={sessions}
           onActionClick={(view) => setActiveView(view)}
         />
       </div>
 
-      {/* At-a-glance calm metrics strip */}
+      {/* Metrics strip based strictly on real records */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-4 shadow-subtle">
+        <div className="bg-white dark:bg-paper-850 border border-paper-300 dark:border-paper-750 rounded-xl p-4 shadow-subtle">
           <div className="flex items-center justify-between text-ink-500 dark:text-ink-400 mb-1">
             <span className="text-xs uppercase font-medium tracking-wider">Scheduled Exams</span>
             <Calendar className="w-3.5 h-3.5" />
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="font-serif text-2xl font-bold text-ink-950 dark:text-white tabular-nums">
-              {data.subjects.length}
+              {subjects.length}
             </span>
             <span className="text-xs text-ink-500">subjects</span>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-4 shadow-subtle">
+        <div className="bg-white dark:bg-paper-850 border border-paper-300 dark:border-paper-750 rounded-xl p-4 shadow-subtle">
           <div className="flex items-center justify-between text-ink-500 dark:text-ink-400 mb-1">
             <span className="text-xs uppercase font-medium tracking-wider">Overall Readiness</span>
             <BarChart2 className="w-3.5 h-3.5" />
@@ -177,9 +274,9 @@ export function DashboardView({
           </div>
         </div>
 
-        <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-4 shadow-subtle">
+        <div className="bg-white dark:bg-paper-850 border border-paper-300 dark:border-paper-750 rounded-xl p-4 shadow-subtle">
           <div className="flex items-center justify-between text-ink-500 dark:text-ink-400 mb-1">
-            <span className="text-xs uppercase font-medium tracking-wider">This Week's Plan</span>
+            <span className="text-xs uppercase font-medium tracking-wider">This Week&apos;s Plan</span>
             <CheckCircle className="w-3.5 h-3.5" />
           </div>
           <div className="flex items-baseline gap-1.5">
@@ -190,7 +287,7 @@ export function DashboardView({
           </div>
         </div>
 
-        <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-4 shadow-subtle">
+        <div className="bg-white dark:bg-paper-850 border border-paper-300 dark:border-paper-750 rounded-xl p-4 shadow-subtle">
           <div className="flex items-center justify-between text-ink-500 dark:text-ink-400 mb-1">
             <span className="text-xs uppercase font-medium tracking-wider">Logged Focus</span>
             <Timer className="w-3.5 h-3.5" />
@@ -206,11 +303,10 @@ export function DashboardView({
 
       {/* Main 2-column workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
-        {/* Left Column: Answer Question 2 (What should I study today?) & Question 3 (What have I completed?) */}
         <div className="lg:col-span-7 space-y-6">
           <TodayPlan
-            sessions={data.sessions}
-            subjects={data.subjects}
+            sessions={sessions}
+            subjects={subjects}
             onToggleComplete={toggleSessionComplete}
             onStartFocus={(sessId, subjId) => {
               setActiveView('focus');
@@ -221,19 +317,17 @@ export function DashboardView({
           />
         </div>
 
-        {/* Right Column: Syllabus Readiness & Planning Assistant */}
         <div className="lg:col-span-5 space-y-6">
           <ReadinessOverview
-            subjects={data.subjects}
-            topics={data.topics}
+            subjects={subjects}
+            topics={topics}
             onOpenReadinessMap={(subjectId) => {
               setActiveView('readiness');
             }}
             onAddSubject={onOpenNewSubject}
           />
 
-          {/* Quick study planner action */}
-          <div className="p-4 rounded-lg border border-paper-300 dark:border-paper-800 bg-paper-50 dark:bg-paper-900 text-xs">
+          <div className="p-4 rounded-xl border border-paper-300 dark:border-paper-750 bg-paper-50 dark:bg-paper-850 text-xs shadow-2xs">
             <div className="flex items-start gap-3">
               <Sparkles className="w-4 h-4 text-forest dark:text-emerald-400 mt-0.5 shrink-0" />
               <div>
@@ -246,13 +340,13 @@ export function DashboardView({
                 <div className="mt-3 flex items-center gap-2">
                   <button
                     onClick={onOpenSuggestPlan}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white font-medium shadow-subtle transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-forest hover:bg-forest-hover text-white font-medium shadow-subtle transition-colors cursor-pointer"
                   >
                     <span>Generate 7-day study plan</span>
                   </button>
                   <button
                     onClick={() => setActiveView('timetable')}
-                    className="px-2.5 py-1.5 text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-ink-100 transition-colors"
+                    className="px-2.5 py-1.5 text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-ink-100 transition-colors cursor-pointer"
                   >
                     View timetable
                   </button>
