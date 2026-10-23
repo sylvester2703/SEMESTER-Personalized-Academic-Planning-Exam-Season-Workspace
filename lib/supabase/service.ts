@@ -12,24 +12,78 @@ export async function signUpWithEmail(
   fullName?: string,
   phone?: string
 ) {
-  return await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName || 'Student',
-        phone: phone || '',
-        whatsapp_notifications: Boolean(phone),
+  try {
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, fullName, phone }),
+    });
+    const result = await res.json();
+    if (!result.success) {
+      return {
+        data: { user: null, session: null },
+        error: new Error(result.error || 'Failed to create account'),
+      };
+    }
+    if (result.session) {
+      try {
+        await supabase.auth.setSession(result.session);
+      } catch (e) {
+        console.warn('[Supabase Client] Session set notice:', e);
+      }
+    }
+    return {
+      data: { user: result.user, session: result.session },
+      error: null,
+    };
+  } catch (apiErr) {
+    console.warn('[Auth API] Proxy unavailable, using client direct:', apiErr);
+    return await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName || 'Student',
+          phone: phone || '',
+          whatsapp_notifications: Boolean(phone),
+        },
       },
-    },
-  });
+    });
+  }
 }
 
 export async function signInWithEmail(email: string, password: string) {
-  return await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  try {
+    const res = await fetch('/api/auth/signin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const result = await res.json();
+    if (!result.success) {
+      return {
+        data: { user: null, session: null },
+        error: new Error(result.error || 'Invalid credentials'),
+      };
+    }
+    if (result.session) {
+      try {
+        await supabase.auth.setSession(result.session);
+      } catch (e) {
+        console.warn('[Supabase Client] Session set notice:', e);
+      }
+    }
+    return {
+      data: { user: result.user, session: result.session },
+      error: null,
+    };
+  } catch (apiErr) {
+    console.warn('[Auth API] Proxy unavailable, using client direct:', apiErr);
+    return await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+  }
 }
 
 export async function signOutUser() {
