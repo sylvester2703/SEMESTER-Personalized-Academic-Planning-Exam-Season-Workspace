@@ -24,6 +24,7 @@ import {
   User,
   UserPlus,
   LogOut,
+  LogIn,
 } from 'lucide-react';
 
 interface AppHeaderProps {
@@ -256,13 +257,52 @@ export function AppHeader({
           {/* Right Action Bar */}
           <div className="flex items-center gap-2">
             {activeView === 'landing' ? (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Open planner */}
                 <button
                   onClick={() => setActiveView('dashboard')}
-                  className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-ink-700 dark:text-ink-300 hover:text-forest dark:hover:text-emerald-400 transition-colors px-2 py-1"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-ink-700 dark:text-ink-300 hover:text-forest dark:hover:text-emerald-400 transition-colors px-2 py-1.5 cursor-pointer"
+                  title="Open full interactive planner"
                 >
                   <span>Open planner</span>
                 </button>
+
+                {/* Login & Sign Up (placed right beside Open Planner and Build study plan) */}
+                {currentUser ? (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium">
+                    <User className="w-3.5 h-3.5 shrink-0" />
+                    <span className="max-w-[110px] truncate">{currentUser.email?.split('@')[0] || 'Student'}</span>
+                    <button
+                      onClick={() => signOut()}
+                      className="inline-flex items-center gap-1 text-xs text-ink-500 hover:text-rose-600 dark:hover:text-rose-400 ml-1 transition-colors cursor-pointer"
+                      title="Sign Out"
+                    >
+                      <LogOut className="w-3 h-3" />
+                      <span className="hidden sm:inline">Logout</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setIsAuthModalOpen(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 hover:border-forest/50 bg-paper-100 hover:bg-paper-200 dark:bg-paper-800 dark:hover:bg-paper-750 text-ink-800 dark:text-ink-200 hover:text-forest dark:hover:text-emerald-400 text-xs font-semibold transition-all cursor-pointer"
+                      title="Login to your account"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />
+                      <span>Login</span>
+                    </button>
+                    <button
+                      onClick={() => setIsAuthModalOpen(true)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                      title="Sign up free"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Sign Up</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Download PDF */}
                 {onOpenPdfExport && (
                   <button
                     onClick={onOpenPdfExport}
@@ -272,12 +312,15 @@ export function AppHeader({
                     <span>Download PDF</span>
                   </button>
                 )}
+
+                {/* Build study plan */}
                 <button
                   onClick={() => setIsOnboardingOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-forest"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-forest cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Build study plan</span>
+                  <span className="hidden sm:inline">Build study plan</span>
+                  <span className="sm:hidden">Plan</span>
                 </button>
               </div>
             ) : (
@@ -286,7 +329,7 @@ export function AppHeader({
                 {onOpenWhatToStudy && (
                   <button
                     onClick={onOpenWhatToStudy}
-                    className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-semibold transition-all shadow-2xs"
+                    className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-semibold transition-all shadow-2xs cursor-pointer"
                     title="Calculate next best study task"
                   >
                     <Compass className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -310,10 +353,42 @@ export function AppHeader({
                 {onOpenNewSession && (
                   <button
                     onClick={onOpenNewSession}
-                    className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-subtle transition-all"
+                    className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-subtle transition-all cursor-pointer"
                   >
                     <span>+ Session</span>
                   </button>
+                )}
+
+                {/* Auth Controls in planner view */}
+                {currentUser ? (
+                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium">
+                    <User className="w-3.5 h-3.5 shrink-0" />
+                    <span className="max-w-[110px] truncate">{currentUser.email?.split('@')[0] || 'Student'}</span>
+                    <button
+                      onClick={() => signOut()}
+                      className="inline-flex items-center gap-1 text-xs text-ink-500 hover:text-rose-600 dark:hover:text-rose-400 ml-1 transition-colors cursor-pointer"
+                      title="Sign Out"
+                    >
+                      <LogOut className="w-3 h-3" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setIsAuthModalOpen(true)}
+                      className="px-2.5 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 hover:border-forest/50 bg-paper-100 hover:bg-paper-200 dark:bg-paper-800 text-xs font-semibold text-ink-800 dark:text-ink-200 hover:text-forest dark:hover:text-emerald-400 transition-colors cursor-pointer"
+                    >
+                      Login
+                    </button>
+                    <button
+                      onClick={() => setIsAuthModalOpen(true)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Sign Up</span>
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -321,7 +396,7 @@ export function AppHeader({
             {/* Theme switcher */}
             <button
               onClick={cycleTheme}
-              className="p-1.5 rounded-md text-ink-600 dark:text-ink-300 hover:text-ink-900 dark:hover:text-white hover:bg-paper-200 dark:hover:bg-paper-800 transition-colors"
+              className="p-1.5 rounded-md text-ink-600 dark:text-ink-300 hover:text-ink-900 dark:hover:text-white hover:bg-paper-200 dark:hover:bg-paper-800 transition-colors cursor-pointer"
               aria-label={`Current theme: ${theme}. Click to change.`}
               title={`Theme: ${theme}`}
             >
@@ -333,43 +408,6 @@ export function AppHeader({
                 <Laptop className="w-4 h-4" />
               )}
             </button>
-
-            {/* Auth Account / Sign In & Sign Up Controls */}
-            {currentUser ? (
-              <div className="hidden sm:flex items-center gap-1.5 pl-2 border-l border-paper-300 dark:border-paper-800">
-                <div
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium"
-                  title={`Signed in as ${currentUser.email || 'Student'}`}
-                >
-                  <User className="w-3.5 h-3.5 shrink-0" />
-                  <span className="max-w-[110px] truncate">{currentUser.email?.split('@')[0] || 'Student'}</span>
-                </div>
-                <button
-                  onClick={() => signOut()}
-                  className="inline-flex items-center gap-1 text-xs text-ink-500 hover:text-rose-600 dark:hover:text-rose-400 px-2 py-1 transition-colors cursor-pointer"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-3 h-3" />
-                  <span>Logout</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 pl-2 border-l border-paper-300 dark:border-paper-800">
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="px-2.5 py-1.5 rounded-md text-xs font-semibold text-ink-700 dark:text-ink-200 hover:text-forest dark:hover:text-emerald-400 hover:bg-paper-200/70 dark:hover:bg-paper-800 transition-colors cursor-pointer"
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Sign Up</span>
-                </button>
-              </div>
-            )}
 
             {/* Mobile menu toggle (secondary access on mobile if needed) */}
             <button
