@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AppData, Subject, Topic, StudySession } from '@/types';
 import { format, parseISO, differenceInDays } from 'date-fns';
+import { formatTime12Hour, formatTimeRange } from '@/lib/dates';
 
 export type PdfExportType = 'full' | 'timetable' | 'daily' | 'exams' | 'syllabus';
 
@@ -254,7 +255,7 @@ export async function generateStudyPlannerPdf(
 
             return [
               `${s.name}\n(${s.code || 'No code'})`,
-              `${format(d, 'EEE, dd MMM yyyy')}\n${s.examTime || '09:00'}`,
+              `${format(d, 'EEE, dd MMM yyyy')}\n${formatTime12Hour(s.examTime || '09:00')}`,
               daysLabel,
               s.examLocation || 'Campus Hall',
               (s.difficulty || 'Moderate').toUpperCase(),
@@ -262,7 +263,7 @@ export async function generateStudyPlannerPdf(
             ];
           })
         : [
-            ['[Write Subject 1 Name]', 'DD/MM/YYYY\n09:00', '___ days', 'Main Exam Hall', 'MODERATE', '[  ] Not started'],
+            ['[Write Subject 1 Name]', 'DD/MM/YYYY\n9:00 AM', '___ days', 'Main Exam Hall', 'MODERATE', '[  ] Not started'],
             ['[Write Subject 2 Name]', 'DD/MM/YYYY\n09:00', '___ days', 'Main Exam Hall', 'MODERATE', '[  ] Not started'],
           ];
 
@@ -320,7 +321,7 @@ export async function generateStudyPlannerPdf(
         ? sortedSessions.map((sess) => {
             const subj = data.subjects.find((s) => s.id === sess.subjectId);
             const dateFormatted = format(parseISO(sess.date), 'EEE, dd MMM');
-            const timeRange = `${sess.startTime} - ${sess.endTime} (${sess.durationMinutes}m)`;
+            const timeRange = `${formatTimeRange(sess.startTime, sess.endTime)} (${sess.durationMinutes}m)`;
             const statusBox = sess.completed ? '[X] Done' : '[  ] Open';
 
             return [
@@ -537,7 +538,7 @@ export async function generateStudyPlannerPdf(
         const subj = data.subjects.find((s) => s.id === sess.subjectId);
         return [
           format(parseISO(sess.date), 'EEE, dd MMM'),
-          `${sess.startTime} - ${sess.endTime}`,
+          formatTimeRange(sess.startTime, sess.endTime),
           `${sess.durationMinutes}m`,
           subj?.name || 'Study',
           sess.title,
@@ -596,7 +597,7 @@ export async function generateStudyPlannerPdf(
       const dayRows = daySessions.map((s) => {
         const subj = data.subjects.find((sub) => sub.id === s.subjectId);
         return [
-          `${s.startTime} - ${s.endTime}`,
+          formatTimeRange(s.startTime, s.endTime),
           `${s.durationMinutes} mins`,
           subj?.name || 'Subject',
           s.title,

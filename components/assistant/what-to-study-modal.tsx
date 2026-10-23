@@ -3,6 +3,7 @@
 import React from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
 import { calculateWhatShouldIStudyNow } from '@/lib/recommendations';
+import { formatTime12Hour } from '@/lib/dates';
 import {
   Compass,
   X,
@@ -83,7 +84,7 @@ export function WhatToStudyModal({
           <Clock className="w-4 h-4 text-forest dark:text-emerald-400" />
           <span>
             {result.nextCommitmentName
-              ? `You have ~${result.availableMinutesNow} minutes available before ${result.nextCommitmentName} at ${result.nextCommitmentTime}.`
+              ? `You have ~${result.availableMinutesNow} minutes available before ${result.nextCommitmentName} at ${formatTime12Hour(result.nextCommitmentTime)}.`
               : `You have an open window of ~${result.availableMinutesNow} minutes right now.`}
           </span>
         </div>

@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
 import { FocusModeType, Subject, StudySession } from '@/types';
+import { formatTime12Hour } from '@/lib/dates';
+import { SoundscapeBar } from '@/components/focus/soundscape-bar';
 import {
   Timer,
   Play,
@@ -360,6 +362,9 @@ export function FocusView() {
         </div>
       </div>
 
+      {/* Focus Sanctuary Soundscape Bar */}
+      <SoundscapeBar className="mt-5" />
+
       {/* Focus Configuration Panel */}
       {mode === 'focus' && (
         <div className="bg-paper-50 dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-5 shadow-subtle space-y-4">
@@ -403,7 +408,7 @@ export function FocusView() {
                 <option value="">Do not link to timetable</option>
                 {subjectSessions.map((sess) => (
                   <option key={sess.id} value={sess.id}>
-                    {sess.date} ({sess.startTime}) — {sess.title}
+                    {sess.date} ({formatTime12Hour(sess.startTime)}) — {sess.title}
                   </option>
                 ))}
               </select>

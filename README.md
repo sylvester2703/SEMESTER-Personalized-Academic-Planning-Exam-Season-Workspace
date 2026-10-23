@@ -251,6 +251,90 @@ A client-side PDF generation engine built with `jspdf` and `jspdf-autotable` ([`
 
 ---
 
+### 3.6 12-Hour Academic Time System & Dropdown Selector
+
+SEMESTER provides an intuitive, student-friendly **12-hour time format with AM/PM selection** across the entire platform, eliminating confusion caused by 24-hour military time (`14:00`, `17:30`):
+
+- **Instant 12-Hour Dropdown Selection**:
+  - A clean, accessible dropdown pre-populated with standard 15-minute time slots from `12:00 AM` to `11:45 PM`.
+  - Allows students to pick a start or end time with a single click.
+- **Granular Fine-Tuning Mode**:
+  - A built-in toggle button switches between quick dropdown slots and exact Hour (`01`–`12`), Minute (`00`–`55`), and segmented `[ AM | PM ]` buttons for non-standard times.
+- **End-to-End Formatting**:
+  - All timetable calendar cards, today's study plan, exam logistics banners, focus view selectors, toast alerts, and exported PDFs render times in clean 12-hour format (e.g. `9:30 AM – 11:00 AM`).
+- **Internal Robustness**:
+  - Converts transparently to standard ISO 24-hour `HH:mm` strings under the hood, ensuring conflict-detection algorithms, overlap checkers, and database sorting remain 100% deterministic.
+
+---
+
+### 3.7 Dual Cloud & Local-First Architecture (Supabase + LocalStorage)
+
+SEMESTER pairs local-first resilience with optional real-time cloud synchronization:
+- **Instant Offline Operation**: Full planning and focus tracking work completely in-browser via validated `localStorage`.
+- **Cloud Synchronization**: Optional Supabase PostgreSQL integration automatically backs up and synchronizes study sessions, subjects, and routine commitments across devices with Row-Level Security (RLS).
+- **Zero Lock-In**: Includes one-click JSON workspace backup, validated file import, and full reset capabilities.
+
+---
+
+### 3.8 Focus Sanctuary: Web Audio Ambient Soundscapes & Binaural Beats
+
+An integrated acoustic sanctuary that runs **100% offline without streaming audio files or Spotify**:
+- **Pure Web Audio Synthesis**: Generates sound in real-time using mathematical buffer synthesis and multi-pole biquad filters:
+  - **40 Hz Gamma Focus Wave**: High-frequency binaural pulse (200 Hz L / 240 Hz R) mathematically tuned to induce deep cognitive problem-solving and rapid data synthesis.
+  - **10 Hz Alpha Calm Wave**: Synchronized low-frequency pulse (210 Hz L / 220 Hz R) designed to alleviate exam anxiety and foster sustainable focus.
+  - **Library Rain**: Modulated white/pink noise passing through dual lowpass resonance filters simulating rain against university window glass.
+  - **Academic Reading Room**: High-entropy filtered brown noise creating an acoustic bubble that blocks household chatter and distracting dorm noise.
+  - **Deep Brown Noise**: 1/f² spectral power density for maximum low-frequency auditory masking.
+- **Micro-Controls**: One-click quick-select pills, master volume slider, instant mute toggle, and smooth fade transitions directly docked below the Pomodoro focus timer.
+
+---
+
+### 3.9 48-Hour Exam Triage Mode ("Panic Button")
+
+When exam day is dangerously close, traditional schedules cause panic and paralysis. The **48-Hour Exam Triage Engine** (`lib/scheduling/triage.ts`) acts as an emergency triage officer:
+- **Yield Matrix Triage Algorithm**:
+  - **Tier 1 (High-Yield Critical)**: Non-negotiable, high-priority syllabus topics with lowest student confidence. These deliver the highest marks-per-minute return.
+  - **Tier 2 (Quick Marks / Fast Wins)**: Medium-to-easy topics that can be locked down in 20–30 minute rapid review sessions.
+  - **Tier 3 (Skip / Prune List)**: Intentionally pruned, low-priority, or already-mastered topics to protect the student from cognitive overload and burnout.
+- **Sleep & Rest Protection**:
+  - Automatically calculates physical hours remaining before the exam date.
+  - Enforces a mandatory **6-hour sleep protection window** (all-nighters destroy exam recall and cognitive processing).
+- **One-Click Timetable Schedule**:
+  - Automatically distributes emergency cram intervals into free blocks over the next 48 hours without overlapping existing commitments.
+- **4 Golden Survival Rules**:
+  - Real-time guidance reminding students to do active problems over re-reading, take hydration breaks, and never trade sleep for low-yield chapters.
+
+---
+
+### 3.10 Target Grade & Readiness Simulator ("What-If" Engine)
+
+The **Target Grade Simulator** (`lib/calculations/grade-simulation.ts`) answers the #1 student question: _"What will happen to my grade if I only study 2 hours a day versus 4 hours?"_
+- **Dynamic Grade Targets**:
+  - Interactive target selector (`A+ / 95%`, `A / 85%`, `B+ / 75%`, `Pass / 60%`).
+- **Real-Time Feasibility Rating**:
+  - Computes remaining syllabus workload vs. available calendar days to calculate:
+    - Daily study hours required to reach target.
+    - Feasibility badge: **Feasible (Green)**, **Challenging (Amber)**, or **Unrealistic Overload (Rose)**.
+    - Realistic shortfall alert with course correction recommendations.
+- **Fastest Path to Target Grade**:
+  - Identifies the top **highest-leverage topics** that yield the greatest percentage readiness leap.
+  - Provides direct **"Launch Focus"** buttons that immediately initiate study sessions on those specific topics.
+
+---
+
+### 3.11 Feynman Technique Active Recall Flash-Drills
+
+Enhanced spaced repetition built on the Nobel laureate's core learning methodology:
+- **Interactive Feynman Modal**:
+  - **Plain-Language Explanation Drill**: Prompts the student to explain the core mechanism of the topic in 2–3 simple sentences as if teaching an absolute beginner.
+  - **Exam Trap & Pitfall Identification**: Requires the student to state what common mistake examiners look for in this topic.
+- **Confidence Self-Rating**:
+  - Rates understanding as **1 (Struggling)**, **2 (Almost There)**, or **3 (Mastered)**.
+- **Adaptive Spaced Repetition**:
+  - Automatically schedules future active recall drills (+1 day, +3 days, or +7 days) directly into the study timetable.
+
+---
+
 ## 4. Local-First Data Architecture & Privacy
 
 SEMESTER operates under strict data sovereignty principles:
@@ -395,10 +479,12 @@ SEMESTER/
 │   │   ├── exam-day-mode.tsx        # Urgent exam-day banner & checklist (<48h)
 │   │   └── exams-view.tsx           # Subject & examination calendar manager
 │   ├── focus/
-│   │   └── focus-view.tsx           # Pomodoro deep focus timer with Web Audio chime
+│   │   ├── focus-view.tsx           # Pomodoro deep focus timer with Web Audio chime
+│   │   └── soundscape-bar.tsx       # Focus Sanctuary ambient soundscapes & binaural beats
 │   ├── modals/
 │   │   ├── add-exam-modal.tsx       # Subject & exam creation dialog
 │   │   ├── add-session-modal.tsx    # Manual study session scheduler
+│   │   ├── exam-triage-modal.tsx    # 48-Hour Exam Triage "Panic Button" yield matrix
 │   │   ├── missed-session-modal.tsx # Guilt-free missed session recovery modal
 │   │   ├── pdf-export-modal.tsx     # 5-preset PDF export configuration dialog
 │   │   └── suggest-plan-modal.tsx   # 7-day schedule generator dialog
@@ -408,14 +494,17 @@ SEMESTER/
 │   ├── onboarding/
 │   │   └── onboarding-modal.tsx     # 5-step conversational routine & plan wizard
 │   ├── readiness/
+│   │   ├── grade-simulator.tsx      # Target Grade & Readiness Simulator ("What-If" engine)
 │   │   ├── readiness-view.tsx       # Syllabus unit & topic tracker with recall triggers
 │   │   └── workload-estimator.tsx   # Available hours vs. syllabus required hours calculator
 │   ├── recall/
-│   │   └── active-recall-modal.tsx  # Spaced repetition testing & rating modal
+│   │   └── active-recall-modal.tsx  # Spaced repetition & Feynman flash-drill modal
 │   ├── review/
 │   │   └── review-view.tsx          # Weekly review, focus totals & subject charts
 │   ├── settings/
 │   │   └── settings-view.tsx        # Profile, JSON backup/restore & clean reset
+│   ├── shared/
+│   │   └── time-input-12h.tsx       # 12-hour time dropdown (15-min slots) & granular selector
 │   ├── timetable/
 │   │   ├── agenda-view.tsx          # Responsive day-by-day timetable agenda
 │   │   ├── timetable-view.tsx       # 7-day calendar grid with conflict detection
@@ -424,8 +513,10 @@ SEMESTER/
 │       └── toast.tsx                # Accessible non-intrusive notification toasts
 ├── lib/
 │   ├── audio/
-│   │   └── chime.ts                 # Web Audio API synthetic harmonic academic chime
+│   │   ├── chime.ts                 # Web Audio API synthetic harmonic academic chime
+│   │   └── soundscapes.ts           # Web Audio procedural soundscapes & binaural synthesizer
 │   ├── calculations/
+│   │   ├── grade-simulation.ts      # Target grade feasibility & highest-leverage topic ranking
 │   │   └── index.ts                 # Workload estimations, countdowns, readiness math
 │   ├── context/
 │   │   └── planner-context.tsx      # Unified React context & action dispatchers
@@ -434,6 +525,7 @@ SEMESTER/
 │   ├── recommendations/
 │   │   └── index.ts                 # "What should I study now?" deterministic engine
 │   ├── scheduling/
+│   │   ├── triage.ts                # 48-Hour Exam Triage algorithm & sleep protector
 │   │   └── index.ts                 # Conflict-free weekly scheduler & routine inverter
 │   └── storage/
 │       ├── index.ts                 # LocalStorage persistence & schema validator

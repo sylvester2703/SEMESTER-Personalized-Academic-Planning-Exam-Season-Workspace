@@ -5,6 +5,7 @@ import { usePlanner } from '@/lib/context/planner-context';
 import { Subject, ConfidenceLevel } from '@/types';
 import { X, Calendar, Clock, MapPin, Tag } from 'lucide-react';
 import { format, addDays } from 'date-fns';
+import { TimeInput12H } from '@/components/shared/time-input-12h';
 
 interface SubjectModalProps {
   isOpen: boolean;
@@ -161,11 +162,10 @@ export function SubjectModal({ isOpen, onClose, subjectToEdit }: SubjectModalPro
               <label className="block text-xs font-medium text-ink-700 dark:text-ink-300 mb-1">
                 Exam Time
               </label>
-              <input
-                type="time"
+              <TimeInput12H
                 value={examTime}
-                onChange={(e) => setExamTime(e.target.value)}
-                className="w-full text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 p-2 text-ink-900 dark:text-ink-100"
+                onChange={setExamTime}
+                className="w-full justify-between"
               />
             </div>
           </div>

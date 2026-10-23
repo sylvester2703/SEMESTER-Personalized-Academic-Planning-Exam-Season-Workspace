@@ -3,6 +3,7 @@
 import React from 'react';
 import { StudySession, Subject } from '@/types';
 import { format } from 'date-fns';
+import { formatTimeRange } from '@/lib/dates';
 import { CheckCircle2, Circle, Clock, Play, Plus, BookOpen, AlertCircle, HeartHandshake } from 'lucide-react';
 
 interface TodayPlanProps {
@@ -119,7 +120,7 @@ export function TodayPlan({
                         {subj?.code || subj?.name || 'Study'}
                       </span>
                       <span className="text-xs text-ink-600 dark:text-ink-300 font-mono font-medium">
-                        {sess.startTime} – {sess.endTime} ({sess.durationMinutes}m)
+                        {formatTimeRange(sess.startTime, sess.endTime)} ({sess.durationMinutes}m)
                       </span>
                     </div>
 

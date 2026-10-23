@@ -25,6 +25,7 @@ import {
   loadSamplePlanData,
 } from '@/lib/storage';
 import { generateSuggestedWeeklyPlan } from '@/lib/scheduling';
+import { formatTime12Hour, formatTimeRange } from '@/lib/dates';
 import {
   supabase,
   syncWorkspaceToSupabase,
@@ -511,7 +512,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     addToast({
       type: 'success',
       title: 'Session scheduled',
-      description: `${newSession.title} on ${newSession.date} at ${newSession.startTime}`,
+      description: `${newSession.title} on ${newSession.date} at ${formatTime12Hour(newSession.startTime)}`,
     });
     return newSession;
   };
@@ -613,7 +614,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     addToast({
       type: 'success',
       title: 'Routine commitment added',
-      description: `${newCommitment.name} (${newCommitment.startTime} - ${newCommitment.endTime})`,
+      description: `${newCommitment.name} (${formatTimeRange(newCommitment.startTime, newCommitment.endTime)})`,
     });
   };
 

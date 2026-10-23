@@ -16,6 +16,8 @@ import {
   PersonalGoal,
 } from '@/types';
 import { generateSuggestedWeeklyPlan, doSessionsOverlap } from '@/lib/scheduling';
+import { formatTimeRange } from '@/lib/dates';
+import { TimeInput12H } from '@/components/shared/time-input-12h';
 import { format, addDays, parseISO } from 'date-fns';
 import {
   Sparkles,
@@ -568,7 +570,7 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                           )}
                         </div>
                         <div className="text-ink-600 dark:text-ink-300 font-mono text-[11px] mt-0.5 font-medium">
-                          {c.startTime} – {c.endTime} ·{' '}
+                          {formatTimeRange(c.startTime, c.endTime)} ·{' '}
                           {c.daysOfWeek.map((d) => dayNames[d]).join(', ')}
                         </div>
                       </div>
@@ -635,29 +637,25 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
               </div>
 
               {/* Time selection */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 items-center">
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-ink-500">From:</span>
-                  <input
-                    type="time"
+                  <span className="text-[11px] font-medium text-ink-600 dark:text-ink-400">From:</span>
+                  <TimeInput12H
                     value={newCommStart}
-                    onChange={(e) => setNewCommStart(e.target.value)}
-                    className="px-2 py-1 text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900"
+                    onChange={setNewCommStart}
                   />
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-ink-500">To:</span>
-                  <input
-                    type="time"
+                  <span className="text-[11px] font-medium text-ink-600 dark:text-ink-400">To:</span>
+                  <TimeInput12H
                     value={newCommEnd}
-                    onChange={(e) => setNewCommEnd(e.target.value)}
-                    className="px-2 py-1 text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900"
+                    onChange={setNewCommEnd}
                   />
                 </div>
                 <button
                   type="button"
                   onClick={handleAddCommitment}
-                  className="px-3 py-1.5 rounded-lg bg-forest text-white text-xs font-semibold hover:bg-forest-dark flex items-center justify-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-forest text-white text-xs font-semibold hover:bg-forest-dark flex items-center justify-center gap-1 shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add Block</span>
@@ -1036,7 +1034,7 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                         {sess.title}
                       </span>
                       <div className="text-[11px] font-mono text-ink-600 dark:text-ink-300 mt-0.5">
-                        {sess.date} · {sess.startTime} - {sess.endTime} ({sess.durationMinutes}m)
+                        {sess.date} · {formatTimeRange(sess.startTime, sess.endTime)} ({sess.durationMinutes}m)
                       </div>
                     </div>
                     <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-forest/10 dark:bg-emerald-950/70 text-forest dark:text-emerald-300 border border-forest/20 dark:border-emerald-700/50 font-bold">

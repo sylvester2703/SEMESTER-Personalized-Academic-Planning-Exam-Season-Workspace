@@ -5,6 +5,7 @@ import { usePlanner } from '@/lib/context/planner-context';
 import { Subject, Topic, TopicStatus, SyllabusUnit } from '@/types';
 import { calculateSyllabusAnalysisReport } from '@/lib/calculations';
 import { WorkloadEstimator } from './workload-estimator';
+import { GradeSimulator } from './grade-simulator';
 import {
   MapPin,
   Plus,
@@ -346,6 +347,16 @@ export function ReadinessView({
             </div>
           )}
         </div>
+      )}
+
+      {/* Target Grade & Readiness Simulator ("What-If" Engine) */}
+      {activeSubject && (
+        <GradeSimulator
+          subject={activeSubject}
+          topics={data.topics}
+          onStartFocusOnTopic={onStartFocus}
+          className="mb-6"
+        />
       )}
 
       {/* FILTER & TOPIC MANAGER */}

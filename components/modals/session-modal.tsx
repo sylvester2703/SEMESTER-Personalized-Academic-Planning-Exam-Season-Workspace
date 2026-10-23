@@ -6,6 +6,7 @@ import { StudySession, Subject, Topic } from '@/types';
 import { doSessionsOverlap } from '@/lib/scheduling';
 import { X, Calendar, Clock, BookOpen, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
+import { TimeInput12H } from '@/components/shared/time-input-12h';
 
 interface SessionModalProps {
   isOpen: boolean;
@@ -196,12 +197,11 @@ export function SessionModal({
               <label className="block text-xs font-medium text-ink-700 dark:text-ink-300 mb-1">
                 Start *
               </label>
-              <input
-                type="time"
+              <TimeInput12H
                 value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+                onChange={setStartTime}
                 required
-                className="w-full text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 p-2 text-ink-900 dark:text-ink-100"
+                className="w-full justify-between"
               />
             </div>
 
@@ -209,12 +209,11 @@ export function SessionModal({
               <label className="block text-xs font-medium text-ink-700 dark:text-ink-300 mb-1">
                 End *
               </label>
-              <input
-                type="time"
+              <TimeInput12H
                 value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
+                onChange={setEndTime}
                 required
-                className="w-full text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 p-2 text-ink-900 dark:text-ink-100"
+                className="w-full justify-between"
               />
             </div>
           </div>

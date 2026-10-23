@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
 import { Subject } from '@/types';
 import { format, parseISO, differenceInDays } from 'date-fns';
+import { formatTime12Hour } from '@/lib/dates';
 import { calculateSubjectReadiness } from '@/lib/calculations';
 import {
   GraduationCap,
@@ -17,6 +18,7 @@ import {
   BookOpen,
   ArrowRight,
   Sparkles,
+  Flame,
 } from 'lucide-react';
 
 interface ExamsViewProps {
@@ -24,6 +26,7 @@ interface ExamsViewProps {
   onEditSubject: (subject: Subject) => void;
   onOpenNewTopic: (subjectId: string) => void;
   onOpenSyllabusManager?: (subjectId: string) => void;
+  onOpenExamTriage?: (subjectId?: string) => void;
 }
 
 export function ExamsView({
@@ -31,6 +34,7 @@ export function ExamsView({
   onEditSubject,
   onOpenNewTopic,
   onOpenSyllabusManager,
+  onOpenExamTriage,
 }: ExamsViewProps) {
   const { data, deleteSubject, setActiveView } = usePlanner();
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -55,13 +59,25 @@ export function ExamsView({
           </p>
         </div>
 
-        <button
-          onClick={onOpenNewSubject}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-subtle transition-all self-start sm:self-auto"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add Subject</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {onOpenExamTriage && (
+            <button
+              type="button"
+              onClick={() => onOpenExamTriage()}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-semibold shadow-2xs transition-all"
+            >
+              <Flame className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 fill-current" />
+              <span>48h Exam Triage</span>
+            </button>
+          )}
+          <button
+            onClick={onOpenNewSubject}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-subtle transition-all"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Subject</span>
+          </button>
+        </div>
       </div>
 
       {/* Empty State */}
@@ -143,7 +159,7 @@ export function ExamsView({
                       <Calendar className="w-3.5 h-3.5 text-forest dark:text-emerald-400 shrink-0" />
                       <span>
                         {format(parseISO(subj.examDate), 'EEEE, d MMMM yyyy')}
-                        {subj.examTime ? ` at ${subj.examTime}` : ''}
+                        {subj.examTime ? ` at ${formatTime12Hour(subj.examTime)}` : ''}
                       </span>
                     </div>
 
@@ -216,6 +232,18 @@ export function ExamsView({
                     >
                       View roadmap
                     </button>
+                    {onOpenExamTriage && (
+                      <>
+                        <span className="text-paper-300 dark:text-paper-700">•</span>
+                        <button
+                          onClick={() => onOpenExamTriage(subj.id)}
+                          className="text-xs text-amber-700 dark:text-amber-400 font-semibold hover:underline inline-flex items-center gap-1"
+                        >
+                          <Flame className="w-3 h-3 fill-current" />
+                          <span>Emergency Triage</span>
+                        </button>
+                      </>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-1.5">

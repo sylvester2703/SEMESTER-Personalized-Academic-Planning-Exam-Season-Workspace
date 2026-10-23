@@ -32,6 +32,9 @@ export function ActiveRecallModal({
   const { updateTopic, recordFocusSession, addSession, addToast } = usePlanner();
 
   const [step, setStep] = useState<'prompt' | 'rating' | 'done'>('prompt');
+  const [drillMode, setDrillMode] = useState<'feynman' | 'retrieval'>('feynman');
+  const [feynmanExplanation, setFeynmanExplanation] = useState<string>('');
+  const [feynmanPitfall, setFeynmanPitfall] = useState<string>('');
   const [selectedRating, setSelectedRating] = useState<'difficult' | 'okay' | 'easy' | null>(null);
   const [aiQuestions, setAiQuestions] = useState<Array<{ question: string; answer: string }>>([]);
 
@@ -155,14 +158,42 @@ export function ActiveRecallModal({
           Retrieving knowledge from memory without looking at notes is the single most proven study method for long-term exam retention.
         </p>
 
-        {/* STEP 1: PROMPT */}
+        {/* STEP 1: PROMPT & FEYNMAN DRILL */}
         {step === 'prompt' && (
           <div className="space-y-4">
-            <div className="p-5 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-center shadow-2xs">
+            {/* Mode Switcher */}
+            <div className="flex rounded-lg border border-paper-200 dark:border-paper-700 p-1 bg-paper-100 dark:bg-paper-800 text-xs">
+              <button
+                type="button"
+                onClick={() => setDrillMode('feynman')}
+                className={`flex-1 py-1.5 px-3 rounded-md font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  drillMode === 'feynman'
+                    ? 'bg-white dark:bg-paper-900 text-forest dark:text-emerald-400 shadow-xs'
+                    : 'text-ink-600 dark:text-ink-400 hover:text-ink-900'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Feynman Technique Drill</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDrillMode('retrieval')}
+                className={`flex-1 py-1.5 px-3 rounded-md font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  drillMode === 'retrieval'
+                    ? 'bg-white dark:bg-paper-900 text-forest dark:text-emerald-400 shadow-xs'
+                    : 'text-ink-600 dark:text-ink-400 hover:text-ink-900'
+                }`}
+              >
+                <Brain className="w-3.5 h-3.5" />
+                <span>Standard Recall</span>
+              </button>
+            </div>
+
+            <div className="p-4 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-center shadow-2xs">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-400">
                 {subject?.name || 'Topic for Recall'}
               </span>
-              <h4 className="font-serif text-xl font-bold text-ink-950 dark:text-white mt-1 mb-2">
+              <h4 className="font-serif text-xl font-bold text-ink-950 dark:text-white mt-0.5 mb-1.5">
                 {topic.title}
               </h4>
               {topic.unitOrModule && (
@@ -172,36 +203,68 @@ export function ActiveRecallModal({
               )}
             </div>
 
-            {aiQuestions.length > 0 && (
-              <div className="p-4 rounded-lg border border-forest/20 bg-forest/5 dark:bg-forest/15 space-y-1.5 text-xs">
-                <span className="font-semibold text-forest dark:text-emerald-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Gemini Practice Question:</span>
-                </span>
-                <p className="text-ink-900 dark:text-white font-medium">
-                  {aiQuestions[0].question}
-                </p>
-                <details className="mt-1 text-ink-600 dark:text-ink-300">
-                  <summary className="cursor-pointer text-forest dark:text-emerald-400 font-medium hover:underline text-[11px]">
-                    Reveal Model Answer
-                  </summary>
-                  <p className="mt-1 pt-1 border-t border-forest/10 text-xs">{aiQuestions[0].answer}</p>
-                </details>
+            {drillMode === 'feynman' ? (
+              <div className="space-y-3">
+                <div className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-2">
+                  <label className="block text-xs font-bold text-ink-900 dark:text-ink-100">
+                    Step 1: Explain in 2 plain sentences without technical jargon:
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={feynmanExplanation}
+                    onChange={(e) => setFeynmanExplanation(e.target.value)}
+                    placeholder="Imagine teaching a high-school classmate who has never seen this before..."
+                    className="w-full p-2.5 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white focus:ring-1 focus:ring-forest"
+                  />
+                </div>
+
+                <div className="p-3.5 rounded-xl border border-paper-200 dark:border-paper-700 bg-paper-50 dark:bg-paper-800/40 space-y-2">
+                  <label className="block text-xs font-bold text-ink-900 dark:text-ink-100">
+                    Step 2: What is the #1 common exam trap or pitfall students make here?
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={feynmanPitfall}
+                    onChange={(e) => setFeynmanPitfall(e.target.value)}
+                    placeholder="e.g. Forgetting boundary conditions, missing edge cases, confusing X with Y..."
+                    className="w-full p-2.5 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white focus:ring-1 focus:ring-forest"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                {aiQuestions.length > 0 && (
+                  <div className="p-4 rounded-lg border border-forest/20 bg-forest/5 dark:bg-forest/15 space-y-1.5 text-xs mb-3">
+                    <span className="font-semibold text-forest dark:text-emerald-400 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Gemini Practice Question:</span>
+                    </span>
+                    <p className="text-ink-900 dark:text-white font-medium">
+                      {aiQuestions[0].question}
+                    </p>
+                    <details className="mt-1 text-ink-600 dark:text-ink-300">
+                      <summary className="cursor-pointer text-forest dark:text-emerald-400 font-medium hover:underline text-[11px]">
+                        Reveal Model Answer
+                      </summary>
+                      <p className="mt-1 pt-1 border-t border-forest/10 text-xs">{aiQuestions[0].answer}</p>
+                    </details>
+                  </div>
+                )}
+
+                <div className="p-4 rounded-lg border border-amber-500/20 bg-amber-500/5 text-xs text-ink-700 dark:text-ink-300 leading-relaxed">
+                  <span className="font-semibold text-amber-900 dark:text-amber-300 block mb-1">
+                    Instructions for this recall check:
+                  </span>
+                  Close your lecture notes and textbook. Spend 3 to 5 minutes recalling core definitions, formulas, and proofs from memory on scratch paper.
+                </div>
               </div>
             )}
-
-            <div className="p-4 rounded-lg border border-amber-500/20 bg-amber-500/5 text-xs text-ink-700 dark:text-ink-300 leading-relaxed">
-              <span className="font-semibold text-amber-900 dark:text-amber-300 block mb-1">
-                Instructions for this recall check:
-              </span>
-              Close your lecture notes, textbook, or IDE. Spend 3 to 5 minutes explaining this concept out loud or jotting down key steps, edge cases, and formulas on blank scratch paper.
-            </div>
 
             <button
               onClick={handleFinishPrompt}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-forest hover:bg-forest-dark text-white text-xs font-semibold shadow-xs transition-all"
             >
-              <span>I Have Tested My Memory — Proceed to Rate</span>
+              <span>Done Recalling — Proceed to Rate Recall Quality</span>
             </button>
           </div>
         )}

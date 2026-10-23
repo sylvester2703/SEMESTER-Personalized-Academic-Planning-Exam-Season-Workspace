@@ -15,6 +15,7 @@ import {
   addDays,
 } from 'date-fns';
 import { detectSessionConflicts } from '@/lib/scheduling';
+import { formatTime12Hour } from '@/lib/dates';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -414,8 +415,8 @@ function SessionCard({
         >
           {subj?.code || subj?.name || 'Study'}
         </span>
-        <span className="text-[10px] text-ink-500 dark:text-ink-400 font-mono">
-          {session.startTime}
+        <span className="text-[10px] text-ink-500 dark:text-ink-400 font-mono font-medium">
+          {formatTime12Hour(session.startTime)}
         </span>
       </div>
 

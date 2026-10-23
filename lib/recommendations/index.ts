@@ -8,6 +8,7 @@ import {
   WhatShouldIStudyNowResult,
 } from '@/types';
 import { format, parseISO, differenceInDays } from 'date-fns';
+import { formatTime12Hour } from '@/lib/dates';
 
 /**
  * Computes the single most actionable, explainable recommendation
@@ -73,7 +74,7 @@ export function getSmartNextStep(
       id: `rec-session-due-${pendingTodaySession.id}`,
       type: 'session_today',
       title: `Start scheduled session: ${pendingTodaySession.title}`,
-      explanation: `You planned a ${pendingTodaySession.durationMinutes}-minute revision block for ${parentSubj?.name || 'today'} at ${pendingTodaySession.startTime}. Starting now keeps your evening clear.`,
+      explanation: `You planned a ${pendingTodaySession.durationMinutes}-minute revision block for ${parentSubj?.name || 'today'} at ${formatTime12Hour(pendingTodaySession.startTime)}. Starting now keeps your evening clear.`,
       actionLabel: 'Launch Focus Timer',
       actionView: 'focus',
       targetSessionId: pendingTodaySession.id,

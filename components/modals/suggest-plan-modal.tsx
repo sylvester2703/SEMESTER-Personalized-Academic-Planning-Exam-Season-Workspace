@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
 import { generateSuggestedWeeklyPlan } from '@/lib/scheduling';
+import { formatTimeRange } from '@/lib/dates';
 import { StudySession } from '@/types';
 import { Sparkles, X, Check, Calendar, AlertCircle } from 'lucide-react';
 
@@ -129,7 +130,7 @@ export function SuggestPlanModal({ isOpen, onClose }: SuggestPlanModalProps) {
                     <div className="flex items-center gap-1.5 font-mono text-[10px] text-ink-400">
                       <span>{sess.date}</span>
                       <span>•</span>
-                      <span>{sess.startTime}–{sess.endTime}</span>
+                      <span>{formatTimeRange(sess.startTime, sess.endTime)}</span>
                       {subj && (
                         <span
                           className="px-1 py-0.2 rounded text-[9px] text-white"

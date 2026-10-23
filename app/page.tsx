@@ -24,6 +24,7 @@ import { WhatToStudyModal } from '@/components/assistant/what-to-study-modal';
 import { MissedSessionModal } from '@/components/modals/missed-session-modal';
 import { ActiveRecallModal } from '@/components/recall/active-recall-modal';
 import { SyllabusManagerModal } from '@/components/syllabus/syllabus-manager-modal';
+import { ExamTriageModal } from '@/components/modals/exam-triage-modal';
 import { AuthModal } from '@/components/auth/auth-modal';
 import { ToastContainer } from '@/components/shared/toast-container';
 import { StudySession, Subject, Topic } from '@/types';
@@ -65,6 +66,9 @@ function PlannerApp() {
 
   const [syllabusManagerOpen, setSyllabusManagerOpen] = useState(false);
   const [initialSyllabusSubjId, setInitialSyllabusSubjId] = useState<string | undefined>();
+
+  const [examTriageModalOpen, setExamTriageModalOpen] = useState(false);
+  const [initialTriageSubjId, setInitialTriageSubjId] = useState<string | undefined>();
 
   // Handlers for opening modals
   const handleOpenNewSession = (date?: string, subjId?: string) => {
@@ -154,6 +158,10 @@ function PlannerApp() {
             onEditSubject={handleEditSubject}
             onOpenNewTopic={handleOpenNewTopic}
             onOpenSyllabusManager={handleOpenSyllabusManager}
+            onOpenExamTriage={(subjId) => {
+              setInitialTriageSubjId(subjId);
+              setExamTriageModalOpen(true);
+            }}
           />
         )}
 
@@ -261,6 +269,16 @@ function PlannerApp() {
 
       {/* Exam Survival Mode Modal */}
       <RescuePlanModal />
+
+      {/* 48-Hour Exam Triage & Emergency Cram Modal */}
+      <ExamTriageModal
+        isOpen={examTriageModalOpen}
+        onClose={() => {
+          setExamTriageModalOpen(false);
+          setInitialTriageSubjId(undefined);
+        }}
+        initialSubjectId={initialTriageSubjId}
+      />
 
       {/* Supabase Authentication & Cloud Sync Modal */}
       <AuthModal

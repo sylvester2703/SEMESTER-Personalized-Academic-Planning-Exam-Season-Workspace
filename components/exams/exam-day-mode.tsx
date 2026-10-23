@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
 import { Subject, ExamDayChecklistItem } from '@/types';
 import { differenceInDays, differenceInHours, parseISO, format } from 'date-fns';
+import { formatTime12Hour } from '@/lib/dates';
 import {
   Bell,
   Clock,
@@ -105,7 +106,7 @@ export function ExamDayMode() {
         <div>
           <span className="text-[10px] uppercase font-semibold text-ink-400 block">Date & Time</span>
           <span className="text-xs font-semibold text-ink-900 dark:text-white">
-            {format(currentFocus.targetDate, 'EEEE, dd MMM yyyy')} at {s.examTime || '09:00'}
+            {format(currentFocus.targetDate, 'EEEE, dd MMM yyyy')} at {formatTime12Hour(s.examTime || '09:00')}
           </span>
         </div>
         <div>

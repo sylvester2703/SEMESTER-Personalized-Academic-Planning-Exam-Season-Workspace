@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
 import { StudySession } from '@/types';
 import { getAvailableFreeIntervals } from '@/lib/scheduling';
+import { formatTimeRange } from '@/lib/dates';
+import { TimeInput12H } from '@/components/shared/time-input-12h';
 import { addDays, format, parseISO } from 'date-fns';
 import {
   HeartHandshake,
@@ -121,7 +123,7 @@ export function MissedSessionModal({
           <div className="flex items-center gap-3 text-xs text-ink-500 dark:text-ink-400 mt-1 font-mono">
             <span>{parentSubject?.name || 'Subject'}</span>
             <span>·</span>
-            <span>{session.date} ({session.startTime} - {session.endTime})</span>
+            <span>{session.date} ({formatTimeRange(session.startTime, session.endTime)})</span>
             <span>·</span>
             <span>{totalDuration} mins</span>
           </div>
@@ -205,29 +207,27 @@ export function MissedSessionModal({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-1">
                   Start Time
                 </label>
-                <input
-                  type="time"
+                <TimeInput12H
                   required
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-900 dark:text-white focus:ring-1 focus:ring-forest"
+                  onChange={setStartTime}
+                  className="w-full justify-between"
                 />
               </div>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-1">
                   End Time
                 </label>
-                <input
-                  type="time"
+                <TimeInput12H
                   required
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-900 dark:text-white focus:ring-1 focus:ring-forest"
+                  onChange={setEndTime}
+                  className="w-full justify-between"
                 />
               </div>
             </div>
@@ -289,12 +289,11 @@ export function MissedSessionModal({
                 <label className="block text-xs font-semibold uppercase tracking-wider text-ink-500 dark:text-ink-400 mb-1">
                   Part 2 Start Time
                 </label>
-                <input
-                  type="time"
+                <TimeInput12H
                   required
                   value={splitStart2}
-                  onChange={(e) => setSplitStart2(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-900 dark:text-white"
+                  onChange={setSplitStart2}
+                  className="w-full justify-between"
                 />
               </div>
             </div>

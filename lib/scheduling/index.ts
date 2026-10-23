@@ -6,6 +6,7 @@ import {
   StudyPreferences,
 } from '@/types';
 import { addDays, format, parseISO, differenceInDays } from 'date-fns';
+import { formatTimeRange } from '@/lib/dates';
 
 /**
  * Checks if two time intervals overlap on the same day.
@@ -341,7 +342,7 @@ export function generateSuggestedWeeklyPlan(
   const routineHighlights: string[] = [];
   const collegeCommitment = commitments.find((c) => c.category === 'college' && c.isFixed);
   if (collegeCommitment) {
-    routineHighlights.push(`college hours (${collegeCommitment.startTime} – ${collegeCommitment.endTime})`);
+    routineHighlights.push(`college hours (${formatTimeRange(collegeCommitment.startTime, collegeCommitment.endTime)})`);
   }
   routineHighlights.push(`preferred ${preferredTimeOfDay} study periods`);
   if (lighterDays.length > 0) {
