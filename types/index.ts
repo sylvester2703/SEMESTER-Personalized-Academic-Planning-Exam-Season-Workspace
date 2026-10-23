@@ -158,6 +158,11 @@ export interface UserProfile {
   goals: PersonalGoal[];
   examChecklist: ExamDayChecklistItem[];
   planExplanation?: string;
+  email?: string;
+  phone?: string;
+  emailScheduleUpdates?: boolean;
+  whatsappScheduleUpdates?: boolean;
+  notificationIntervalHours?: number; // 1 or 2 hours
   createdAt: string;
 }
 

@@ -18,12 +18,23 @@ import {
   Cloud,
   User,
   LogOut,
+  Pencil,
+  Plus,
+  Shield,
+  Check,
+  X,
 } from 'lucide-react';
+import { TimeInput12H } from '@/components/shared/time-input-12h';
+import { formatTimeRange } from '@/lib/dates';
+import { RoutineCommitment, RoutineCategory } from '@/types';
 
 export function SettingsView() {
   const {
     data,
     updateProfile,
+    addRoutineCommitment,
+    updateRoutineCommitment,
+    deleteRoutineCommitment,
     theme,
     setTheme,
     resetAllData,
@@ -47,6 +58,95 @@ export function SettingsView() {
   const [resetType, setResetType] = useState<'sample' | 'empty'>('sample');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Routine commitments state in SettingsView
+  const routineCommitments = data.profile.routineCommitments || [];
+  const [editingCommId, setEditingCommId] = useState<string | null>(null);
+  const [editCommName, setEditCommName] = useState('');
+  const [editCommCategory, setEditCommCategory] = useState<RoutineCategory>('college');
+  const [editCommDays, setEditCommDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [editCommStart, setEditCommStart] = useState('09:00');
+  const [editCommEnd, setEditCommEnd] = useState('16:00');
+  const [editCommFixed, setEditCommFixed] = useState(true);
+
+  // Quick Add Commitment state in SettingsView
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newCommName, setNewCommName] = useState('');
+  const [newCommCategory, setNewCommCategory] = useState<RoutineCategory>('college');
+  const [newCommDays, setNewCommDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [newCommStart, setNewCommStart] = useState('17:00');
+  const [newCommEnd, setNewCommEnd] = useState('18:00');
+  const [newCommFixed, setNewCommFixed] = useState(true);
+
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const startEditCommitment = (c: RoutineCommitment) => {
+    setEditingCommId(c.id);
+    setEditCommName(c.name);
+    setEditCommCategory(c.category);
+    setEditCommDays([...c.daysOfWeek]);
+    setEditCommStart(c.startTime);
+    setEditCommEnd(c.endTime);
+    setEditCommFixed(c.isFixed ?? true);
+  };
+
+  const cancelEditCommitment = () => {
+    setEditingCommId(null);
+  };
+
+  const handleSaveEditCommitment = () => {
+    if (!editCommName.trim() || !editingCommId) return;
+    updateRoutineCommitment(editingCommId, {
+      name: editCommName.trim(),
+      category: editCommCategory,
+      daysOfWeek: editCommDays.length > 0 ? editCommDays : [1, 2, 3, 4, 5],
+      startTime: editCommStart,
+      endTime: editCommEnd,
+      isFixed: editCommFixed,
+    });
+    setEditingCommId(null);
+    addToast({
+      type: 'success',
+      title: 'Routine commitment updated',
+      description: 'Your study timetable will respect your updated availability.',
+    });
+  };
+
+  const toggleEditDay = (day: number) => {
+    if (editCommDays.includes(day)) {
+      setEditCommDays(editCommDays.filter((d) => d !== day));
+    } else {
+      setEditCommDays([...editCommDays, day].sort());
+    }
+  };
+
+  const toggleNewDay = (day: number) => {
+    if (newCommDays.includes(day)) {
+      setNewCommDays(newCommDays.filter((d) => d !== day));
+    } else {
+      setNewCommDays([...newCommDays, day].sort());
+    }
+  };
+
+  const handleCreateCommitment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommName.trim()) return;
+    addRoutineCommitment({
+      name: newCommName.trim(),
+      category: newCommCategory,
+      daysOfWeek: newCommDays.length > 0 ? newCommDays : [1, 2, 3, 4, 5],
+      startTime: newCommStart,
+      endTime: newCommEnd,
+      isFixed: newCommFixed,
+    });
+    setNewCommName('');
+    setIsAddingNew(false);
+    addToast({
+      type: 'success',
+      title: 'Activity added',
+      description: 'New routine commitment added to your schedule.',
+    });
+  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,6 +363,262 @@ export function SettingsView() {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Daily Routine & Fixed Commitments */}
+      <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-5 sm:p-6 shadow-subtle space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-paper-200 dark:border-paper-800">
+          <div>
+            <h3 className="font-serif text-lg font-semibold text-ink-950 dark:text-ink-50">
+              Daily Routine & Fixed Commitments
+            </h3>
+            <p className="text-xs text-ink-500 dark:text-ink-400 mt-0.5">
+              Edit your daily activities, college hours, and meal times. Study sessions will strictly avoid these hours.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsAddingNew(!isAddingNew)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-forest/10 hover:bg-forest text-forest hover:text-white dark:text-emerald-300 dark:hover:bg-emerald-700 dark:hover:text-white text-xs font-semibold transition-all shadow-2xs"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{isAddingNew ? 'Close Form' : 'Add Activity'}</span>
+          </button>
+        </div>
+
+        {/* Add New Activity Form */}
+        {isAddingNew && (
+          <form onSubmit={handleCreateCommitment} className="p-4 rounded-xl border border-forest/30 dark:border-emerald-600/40 bg-forest/5 dark:bg-emerald-950/20 space-y-3 animate-in fade-in-50 duration-150">
+            <span className="text-xs font-bold text-forest dark:text-emerald-400 block uppercase tracking-wider">
+              Add New Routine Activity
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <input
+                type="text"
+                placeholder="Activity name (e.g. Evening Coaching)"
+                value={newCommName}
+                onChange={(e) => setNewCommName(e.target.value)}
+                className="px-3 py-2 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+                required
+              />
+              <select
+                value={newCommCategory}
+                onChange={(e) => setNewCommCategory(e.target.value as any)}
+                className="px-3 py-2 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+              >
+                <option value="college">College / University</option>
+                <option value="tuition">Coaching / Tuition</option>
+                <option value="exercise">Sports / Workout</option>
+                <option value="commute">Commute</option>
+                <option value="meals">Meals & Break</option>
+                <option value="personal">Personal / Hobby</option>
+              </select>
+            </div>
+
+            {/* Days selection */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] text-ink-500 mr-1 font-medium">Days:</span>
+              {dayNames.map((dName, idx) => {
+                const isSel = newCommDays.includes(idx);
+                return (
+                  <button
+                    key={dName}
+                    type="button"
+                    onClick={() => toggleNewDay(idx)}
+                    className={`px-2 py-0.5 rounded text-[11px] font-mono transition-all ${
+                      isSel
+                        ? 'bg-forest text-white'
+                        : 'bg-paper-200 dark:bg-paper-700 text-ink-700 dark:text-ink-300'
+                    }`}
+                  >
+                    {dName}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* From / To with 12-hour dropdown */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-forest/10 dark:border-emerald-800/30">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-ink-600 dark:text-ink-400">From:</span>
+                  <TimeInput12H value={newCommStart} onChange={setNewCommStart} />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-ink-600 dark:text-ink-400">To:</span>
+                  <TimeInput12H value={newCommEnd} onChange={setNewCommEnd} />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingNew(false)}
+                  className="px-3 py-1.5 text-xs text-ink-600 dark:text-ink-400 hover:bg-paper-200 dark:hover:bg-paper-700 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-md flex items-center gap-1 shadow-2xs transition-all"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Save Activity</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
+
+        {/* List of routine commitments */}
+        {routineCommitments.length === 0 ? (
+          <p className="text-xs text-ink-500 italic py-2">
+            No fixed commitments defined. Add your college lectures, sleep, or meal hours so study plans adapt around them.
+          </p>
+        ) : (
+          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+            {routineCommitments.map((c) =>
+              editingCommId === c.id ? (
+                <div
+                  key={c.id}
+                  className="p-3.5 rounded-xl border-2 border-forest/40 dark:border-emerald-600/50 bg-forest/5 dark:bg-emerald-950/20 space-y-3 transition-all shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-forest dark:text-emerald-400 flex items-center gap-1.5">
+                      <Pencil className="w-3.5 h-3.5" />
+                      <span>Edit Commitment Time & Days</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={cancelEditCommitment}
+                      className="text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 text-xs"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Activity name (e.g. Lunch)"
+                      value={editCommName}
+                      onChange={(e) => setEditCommName(e.target.value)}
+                      className="px-3 py-1.5 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+                    />
+                    <select
+                      value={editCommCategory}
+                      onChange={(e) => setEditCommCategory(e.target.value as any)}
+                      className="px-3 py-1.5 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+                    >
+                      <option value="college">College / University</option>
+                      <option value="tuition">Coaching / Tuition</option>
+                      <option value="exercise">Sports / Workout</option>
+                      <option value="commute">Commute</option>
+                      <option value="meals">Meals & Break</option>
+                      <option value="personal">Personal / Hobby</option>
+                    </select>
+                  </div>
+
+                  {/* Day selection */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] text-ink-500 mr-1 font-medium">Days:</span>
+                    {dayNames.map((dName, idx) => {
+                      const isSel = editCommDays.includes(idx);
+                      return (
+                        <button
+                          key={dName}
+                          type="button"
+                          onClick={() => toggleEditDay(idx)}
+                          className={`px-2 py-0.5 rounded text-[11px] font-mono transition-all ${
+                            isSel
+                              ? 'bg-forest text-white'
+                              : 'bg-paper-200 dark:bg-paper-700 text-ink-700 dark:text-ink-300'
+                          }`}
+                        >
+                          {dName}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Time selection with TimeInput12H */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-forest/10 dark:border-emerald-800/30">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-medium text-ink-600 dark:text-ink-400">From:</span>
+                        <TimeInput12H value={editCommStart} onChange={setEditCommStart} />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-medium text-ink-600 dark:text-ink-400">To:</span>
+                        <TimeInput12H value={editCommEnd} onChange={setEditCommEnd} />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={cancelEditCommitment}
+                        className="px-2.5 py-1 text-xs text-ink-600 dark:text-ink-400 hover:bg-paper-200 dark:hover:bg-paper-700 rounded-md transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveEditCommitment}
+                        className="px-3 py-1 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-md flex items-center gap-1 shadow-2xs transition-all"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Save Changes</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between p-3 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-xs shadow-2xs hover:border-forest/30 transition-all"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Shield className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-semibold text-ink-950 dark:text-white flex items-center gap-2 truncate">
+                        <span>{c.name}</span>
+                        {c.isFixed && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-forest/10 dark:bg-emerald-950/70 text-forest dark:text-emerald-300 border border-forest/20 dark:border-emerald-700/50 font-mono font-bold">
+                            FIXED
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-ink-600 dark:text-ink-300 font-mono text-[11px] mt-0.5 font-medium truncate">
+                        {formatTimeRange(c.startTime, c.endTime)} ·{' '}
+                        {c.daysOfWeek.map((d) => dayNames[d]).join(', ')}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 ml-2">
+                    <button
+                      type="button"
+                      onClick={() => startEditCommitment(c)}
+                      title="Edit activity name, time & days"
+                      className="p-1.5 rounded-md text-ink-500 hover:text-forest hover:bg-forest/10 dark:text-ink-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-950/50 transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteRoutineCommitment(c.id)}
+                      title="Delete activity"
+                      className="p-1.5 rounded-md text-ink-400 hover:text-red-500 hover:bg-red-50 dark:text-ink-400 dark:hover:text-red-400 dark:hover:bg-red-950/30 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        )}
       </div>
 
       {/* Theme Selection */}

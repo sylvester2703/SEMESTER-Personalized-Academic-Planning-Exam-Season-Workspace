@@ -123,53 +123,65 @@ export function CountdownBanner({ subjects, onAddSubject, onViewSubject }: Count
           </p>
         </div>
 
-        {/* Right: Tabular Countdown Clock */}
-        <div className="flex flex-col items-start lg:items-end shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-paper-200 dark:border-paper-800">
+        {/* Right: Big Tabular Countdown Clock */}
+        <div className="flex flex-col items-start lg:items-end shrink-0 pt-3 lg:pt-0 border-t lg:border-t-0 border-paper-200 dark:border-paper-800">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-forest dark:text-emerald-400 mb-2 flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-forest dark:bg-emerald-400 animate-pulse" />
+            <span>Time Left For Exam</span>
+          </span>
+
           <div className="grid grid-cols-4 gap-2 sm:gap-3 text-center">
             {/* Days */}
-            <div className="flex flex-col items-center bg-paper-100 dark:bg-paper-800/60 border border-paper-300/80 dark:border-paper-700/60 rounded px-3 py-2 sm:px-4 sm:py-2.5 min-w-[58px] sm:min-w-[68px]">
-              <span className="tabular-nums font-serif text-2xl sm:text-3xl font-semibold text-ink-950 dark:text-white leading-none">
+            <div className="flex flex-col items-center justify-center bg-paper-50 dark:bg-paper-800/80 border border-paper-300 dark:border-paper-700 rounded-xl px-3.5 py-2.5 sm:px-5 sm:py-3.5 min-w-[64px] sm:min-w-[80px] shadow-2xs">
+              <span className="tabular-nums font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-ink-950 dark:text-white leading-none">
                 {String(days).padStart(2, '0')}
               </span>
-              <span className="text-[10px] uppercase tracking-wider text-ink-500 dark:text-ink-400 mt-1 font-medium">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-ink-500 dark:text-ink-400 mt-1.5 font-semibold">
                 Days
               </span>
             </div>
 
             {/* Hours */}
-            <div className="flex flex-col items-center bg-paper-100 dark:bg-paper-800/60 border border-paper-300/80 dark:border-paper-700/60 rounded px-3 py-2 sm:px-4 sm:py-2.5 min-w-[58px] sm:min-w-[68px]">
-              <span className="tabular-nums font-serif text-2xl sm:text-3xl font-semibold text-ink-950 dark:text-white leading-none">
+            <div className="flex flex-col items-center justify-center bg-paper-50 dark:bg-paper-800/80 border border-paper-300 dark:border-paper-700 rounded-xl px-3.5 py-2.5 sm:px-5 sm:py-3.5 min-w-[64px] sm:min-w-[80px] shadow-2xs">
+              <span className="tabular-nums font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-ink-950 dark:text-white leading-none">
                 {String(hours).padStart(2, '0')}
               </span>
-              <span className="text-[10px] uppercase tracking-wider text-ink-500 dark:text-ink-400 mt-1 font-medium">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-ink-500 dark:text-ink-400 mt-1.5 font-semibold">
                 Hours
               </span>
             </div>
 
             {/* Minutes */}
-            <div className="flex flex-col items-center bg-paper-100 dark:bg-paper-800/60 border border-paper-300/80 dark:border-paper-700/60 rounded px-3 py-2 sm:px-4 sm:py-2.5 min-w-[58px] sm:min-w-[68px]">
-              <span className="tabular-nums font-serif text-2xl sm:text-3xl font-semibold text-ink-950 dark:text-white leading-none">
+            <div className="flex flex-col items-center justify-center bg-paper-50 dark:bg-paper-800/80 border border-paper-300 dark:border-paper-700 rounded-xl px-3.5 py-2.5 sm:px-5 sm:py-3.5 min-w-[64px] sm:min-w-[80px] shadow-2xs">
+              <span className="tabular-nums font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-ink-950 dark:text-white leading-none">
                 {String(minutes).padStart(2, '0')}
               </span>
-              <span className="text-[10px] uppercase tracking-wider text-ink-500 dark:text-ink-400 mt-1 font-medium">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-ink-500 dark:text-ink-400 mt-1.5 font-semibold">
                 Mins
               </span>
             </div>
 
             {/* Seconds */}
-            <div className="flex flex-col items-center bg-paper-100 dark:bg-paper-800/60 border border-paper-300/80 dark:border-paper-700/60 rounded px-3 py-2 sm:px-4 sm:py-2.5 min-w-[58px] sm:min-w-[68px]">
-              <span className="tabular-nums font-serif text-2xl sm:text-3xl font-semibold text-forest dark:text-emerald-400 leading-none">
+            <div className="flex flex-col items-center justify-center bg-forest/10 dark:bg-emerald-950/50 border border-forest/30 dark:border-emerald-700/50 rounded-xl px-3.5 py-2.5 sm:px-5 sm:py-3.5 min-w-[64px] sm:min-w-[80px] shadow-2xs">
+              <span className="tabular-nums font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-forest dark:text-emerald-400 leading-none">
                 {String(seconds).padStart(2, '0')}
               </span>
-              <span className="text-[10px] uppercase tracking-wider text-ink-500 dark:text-ink-400 mt-1 font-medium">
+              <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-forest dark:text-emerald-400 mt-1.5 font-bold">
                 Secs
               </span>
             </div>
           </div>
 
-          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-ink-400 dark:text-ink-500">
-            <Clock className="w-3 h-3" />
-            <span>Timezone: {localTz}</span>
+          <div className="mt-3 flex items-center justify-between w-full text-[11px] text-ink-400 dark:text-ink-500">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              <span>{localTz}</span>
+            </span>
+            {nextExam?.targetGrade && (
+              <span className="font-medium text-forest dark:text-emerald-400">
+                Target: {nextExam.targetGrade}
+              </span>
+            )}
           </div>
         </div>
       </div>

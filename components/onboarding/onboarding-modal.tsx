@@ -37,7 +37,11 @@ import {
   Target,
   AlertTriangle,
   Compass,
+  Pencil,
+  Upload,
+  FileText,
 } from 'lucide-react';
+import { parseSyllabusText } from '@/lib/syllabus/parser';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -75,6 +79,15 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
   const [newCommEnd, setNewCommEnd] = useState('18:00');
   const [newCommFixed, setNewCommFixed] = useState(true);
 
+  // Editing state for existing commitments in Step 2
+  const [editingCommId, setEditingCommId] = useState<string | null>(null);
+  const [editCommName, setEditCommName] = useState('');
+  const [editCommCategory, setEditCommCategory] = useState<RoutineCategory>('college');
+  const [editCommDays, setEditCommDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [editCommStart, setEditCommStart] = useState('17:00');
+  const [editCommEnd, setEditCommEnd] = useState('18:00');
+  const [editCommFixed, setEditCommFixed] = useState(true);
+
   // STEP 3: Subjects & Examinations
   const [subjectName, setSubjectName] = useState('');
   const [subjectCode, setSubjectCode] = useState('');
@@ -84,6 +97,9 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
   const [prepLevel, setPrepLevel] = useState<SubjectPrepLevel>('in_progress');
   const [priority, setPriority] = useState<SubjectPriority>('high');
   const [initialTopicNames, setInitialTopicNames] = useState('');
+
+  // Editing state for draft subjects in Step 3
+  const [editingSubjectIndex, setEditingSubjectIndex] = useState<number | null>(null);
 
   const [draftSubjects, setDraftSubjects] = useState<
     {
@@ -96,8 +112,15 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
       priority: SubjectPriority;
       confidence: ConfidenceLevel;
       topics: string[];
+      units?: { id: string; title: string; unitNumber: string; topics: string[] }[];
     }[]
   >([]);
+
+  // Step 3 syllabus upload & unit container state
+  const [step3Units, setStep3Units] = useState<{ id: string; unitNumber: string; title: string; topics: string[] }[]>([]);
+  const [step3ShowSyllabusDrawer, setStep3ShowSyllabusDrawer] = useState(false);
+  const [step3SyllabusText, setStep3SyllabusText] = useState('');
+  const [step3NewTopicByUnit, setStep3NewTopicByUnit] = useState<Record<string, string>>({});
 
   // STEP 4: Study Preferences
   const [dailyHours, setDailyHours] = useState<number>(3.5);
@@ -113,12 +136,21 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
 
   if (!isOpen) return null;
 
-  // Day toggler for commitments
+  // Day toggler for new commitment
   const toggleDay = (day: number) => {
     if (newCommDays.includes(day)) {
       setNewCommDays(newCommDays.filter((d) => d !== day));
     } else {
       setNewCommDays([...newCommDays, day].sort());
+    }
+  };
+
+  // Day toggler for editing commitment
+  const toggleEditDay = (day: number) => {
+    if (editCommDays.includes(day)) {
+      setEditCommDays(editCommDays.filter((d) => d !== day));
+    } else {
+      setEditCommDays([...editCommDays, day].sort());
     }
   };
 
@@ -137,7 +169,44 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
     setNewCommName('');
   };
 
+  const startEditCommitment = (c: RoutineCommitment) => {
+    setEditingCommId(c.id);
+    setEditCommName(c.name);
+    setEditCommCategory(c.category);
+    setEditCommDays([...c.daysOfWeek]);
+    setEditCommStart(c.startTime);
+    setEditCommEnd(c.endTime);
+    setEditCommFixed(c.isFixed ?? true);
+  };
+
+  const cancelEditCommitment = () => {
+    setEditingCommId(null);
+  };
+
+  const saveEditCommitment = () => {
+    if (!editCommName.trim() || !editingCommId) return;
+    setCommitments((prev) =>
+      prev.map((c) =>
+        c.id === editingCommId
+          ? {
+              ...c,
+              name: editCommName.trim(),
+              category: editCommCategory,
+              daysOfWeek: editCommDays.length > 0 ? editCommDays : [1, 2, 3, 4, 5],
+              startTime: editCommStart,
+              endTime: editCommEnd,
+              isFixed: editCommFixed,
+            }
+          : c
+      )
+    );
+    setEditingCommId(null);
+  };
+
   const handleDeleteCommitment = (id: string) => {
+    if (editingCommId === id) {
+      setEditingCommId(null);
+    }
     setCommitments(commitments.filter((c) => c.id !== id));
   };
 
@@ -182,7 +251,97 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
     }
   };
 
-  // Add draft subject
+  const startEditDraftSubject = (index: number) => {
+    const s = draftSubjects[index];
+    if (!s) return;
+    setEditingSubjectIndex(index);
+    setSubjectName(s.name);
+    setSubjectCode(s.code);
+    setExamDate(s.examDate);
+    setExamTime(s.examTime);
+    setDifficulty(s.difficulty);
+    setPrepLevel(s.prepLevel);
+    setPriority(s.priority);
+    setInitialTopicNames(s.topics.join(', '));
+  };
+
+  const cancelEditDraftSubject = () => {
+    setEditingSubjectIndex(null);
+    setSubjectName('');
+    setSubjectCode('');
+    setExamDate(format(addDays(new Date(), 14), 'yyyy-MM-dd'));
+    setExamTime('09:30');
+    setInitialTopicNames('');
+    setStep3Units([]);
+  };
+
+  const handleAddStep3Unit = () => {
+    const nextIdx = step3Units.length + 1;
+    setStep3Units((prev) => [
+      ...prev,
+      {
+        id: `draft-unit-${Date.now()}-${nextIdx}`,
+        unitNumber: `Unit ${nextIdx}`,
+        title: `Unit ${nextIdx}: Core Module`,
+        topics: [],
+      },
+    ]);
+  };
+
+  const handleDeleteStep3Unit = (id: string) => {
+    setStep3Units((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  const handleAddTopicToStep3Unit = (unitId: string) => {
+    const text = (step3NewTopicByUnit[unitId] || '').trim();
+    if (!text) return;
+    setStep3Units((prev) =>
+      prev.map((u) => (u.id === unitId ? { ...u, topics: [...u.topics, text] } : u))
+    );
+    setStep3NewTopicByUnit((prev) => ({ ...prev, [unitId]: '' }));
+  };
+
+  const handleRemoveTopicFromStep3Unit = (unitId: string, topicIdx: number) => {
+    setStep3Units((prev) =>
+      prev.map((u) =>
+        u.id === unitId
+          ? { ...u, topics: u.topics.filter((_, idx) => idx !== topicIdx) }
+          : u
+      )
+    );
+  };
+
+  const handleParseStep3Syllabus = (rawText: string) => {
+    if (!rawText.trim()) return;
+    const parsed = parseSyllabusText(rawText, 'draft');
+    if (parsed.units.length > 0) {
+      const parsedUnits = parsed.units.map((u) => {
+        const uTopics = parsed.topics
+          .filter((t) => t.unitId === u.id || t.unitOrModule === u.unitNumber)
+          .map((t) => t.title);
+        return {
+          id: u.id,
+          unitNumber: String(u.unitNumber || `Unit ${u.order}`),
+          title: u.title,
+          topics: uTopics.length > 0 ? uTopics : ['Unit overview & key concepts'],
+        };
+      });
+      setStep3Units(parsedUnits);
+      setStep3ShowSyllabusDrawer(false);
+    } else if (parsed.topics.length > 0) {
+      setStep3Units([
+        {
+          id: `draft-unit-${Date.now()}`,
+          unitNumber: 'Unit 1',
+          title: 'Syllabus Lessons & Topics',
+          topics: parsed.topics.map((t) => t.title),
+        },
+      ]);
+      setStep3ShowSyllabusDrawer(false);
+    }
+  };
+
+  // Add or update draft subject
   const handleAddDraftSubject = () => {
     if (!subjectName.trim()) return;
     const topicsArray = initialTopicNames
@@ -190,25 +349,60 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
       .map((t) => t.trim())
       .filter(Boolean);
 
-    setDraftSubjects((prev) => [
-      ...prev,
-      {
-        name: subjectName.trim(),
-        code: subjectCode.trim(),
-        examDate,
-        examTime,
-        difficulty,
-        prepLevel,
-        priority,
-        confidence: prepLevel === 'well_prepared' ? 'high' : prepLevel === 'in_progress' ? 'medium' : 'low',
-        topics: topicsArray.length > 0 ? topicsArray : ['Core Theory & Practice'],
-      },
-    ]);
+    const unitTopics = step3Units.flatMap((u) => u.topics);
+    const finalTopics =
+      unitTopics.length > 0
+        ? unitTopics
+        : topicsArray.length > 0
+        ? topicsArray
+        : ['Core Theory & Practice'];
+
+    if (editingSubjectIndex !== null) {
+      setDraftSubjects((prev) =>
+        prev.map((s, idx) =>
+          idx === editingSubjectIndex
+            ? {
+                ...s,
+                name: subjectName.trim(),
+                code: subjectCode.trim(),
+                examDate,
+                examTime,
+                difficulty,
+                prepLevel,
+                priority,
+                confidence: prepLevel === 'well_prepared' ? 'high' : prepLevel === 'in_progress' ? 'medium' : 'low',
+                topics: finalTopics,
+                units: step3Units.length > 0 ? step3Units : s.units,
+              }
+            : s
+        )
+      );
+      setEditingSubjectIndex(null);
+    } else {
+      setDraftSubjects((prev) => [
+        ...prev,
+        {
+          name: subjectName.trim(),
+          code: subjectCode.trim(),
+          examDate,
+          examTime,
+          difficulty,
+          prepLevel,
+          priority,
+          confidence: prepLevel === 'well_prepared' ? 'high' : prepLevel === 'in_progress' ? 'medium' : 'low',
+          topics: finalTopics,
+          units: step3Units.length > 0 ? step3Units : undefined,
+        },
+      ]);
+    }
 
     setSubjectName('');
     setSubjectCode('');
     setExamDate(format(addDays(new Date(), 21), 'yyyy-MM-dd'));
     setInitialTopicNames('');
+    setStep3Units([]);
+    setStep3SyllabusText('');
+    setStep3ShowSyllabusDrawer(false);
   };
 
   // Generate Preview
@@ -349,16 +543,37 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
         priority: s.priority,
         confidence: s.confidence,
         color: ['#2D5541', '#D99B38', '#3B6B7A', '#765C83'][idx % 4],
+        units: s.units?.map((u, uIdx) => ({
+          id: u.id,
+          subjectId: '',
+          unitNumber: u.unitNumber,
+          title: u.title,
+          order: uIdx + 1,
+        })),
       });
       createdSubjectMap.set(`draft-subj-${idx}`, created.id);
 
-      s.topics.forEach((tTitle) => {
-        addTopic({
-          subjectId: created.id,
-          title: tTitle,
-          status: 'not_started',
+      if (s.units && s.units.length > 0) {
+        s.units.forEach((u) => {
+          u.topics.forEach((tTitle) => {
+            addTopic({
+              subjectId: created.id,
+              unitId: u.id,
+              unitOrModule: u.title,
+              title: tTitle,
+              status: 'not_started',
+            });
+          });
         });
-      });
+      } else {
+        s.topics.forEach((tTitle) => {
+          addTopic({
+            subjectId: created.id,
+            title: tTitle,
+            status: 'not_started',
+          });
+        });
+      }
     });
 
     // 4. Save generated sessions with real subject IDs
@@ -552,37 +767,146 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                 </div>
               </div>
             ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {commitments.map((c) => (
-                  <div
-                    key={c.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-xs shadow-2xs"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Shield className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0" />
-                      <div>
-                        <div className="font-semibold text-ink-950 dark:text-white flex items-center gap-2">
-                          <span>{c.name}</span>
-                          {c.isFixed && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-forest/10 dark:bg-emerald-950/70 text-forest dark:text-emerald-300 border border-forest/20 dark:border-emerald-700/50 font-mono font-bold">
-                              FIXED
-                            </span>
-                          )}
+              <div className="space-y-2.5 max-h-72 sm:max-h-96 overflow-y-auto pr-1">
+                {commitments.map((c) =>
+                  editingCommId === c.id ? (
+                    <div
+                      key={c.id}
+                      className="p-3.5 rounded-xl border-2 border-forest/40 dark:border-emerald-600/50 bg-forest/5 dark:bg-emerald-950/20 space-y-3 transition-all shadow-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-forest dark:text-emerald-400 flex items-center gap-1.5">
+                          <Pencil className="w-3.5 h-3.5" />
+                          <span>Edit Activity & Schedule</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={cancelEditCommitment}
+                          className="text-ink-400 hover:text-ink-700 dark:hover:text-ink-200 text-xs"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Activity name (e.g. Lunch)"
+                          value={editCommName}
+                          onChange={(e) => setEditCommName(e.target.value)}
+                          className="px-3 py-1.5 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+                        />
+                        <select
+                          value={editCommCategory}
+                          onChange={(e) => setEditCommCategory(e.target.value as any)}
+                          className="px-3 py-1.5 text-xs rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white"
+                        >
+                          <option value="college">College / University</option>
+                          <option value="tuition">Coaching / Tuition</option>
+                          <option value="exercise">Sports / Workout</option>
+                          <option value="commute">Commute</option>
+                          <option value="meals">Meals & Break</option>
+                          <option value="personal">Personal / Hobby</option>
+                        </select>
+                      </div>
+
+                      {/* Day selection */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-ink-500 mr-1 font-medium">Days:</span>
+                        {dayNames.map((dName, idx) => {
+                          const isSel = editCommDays.includes(idx);
+                          return (
+                            <button
+                              key={dName}
+                              type="button"
+                              onClick={() => toggleEditDay(idx)}
+                              className={`px-2 py-0.5 rounded text-[11px] font-mono transition-all ${
+                                isSel
+                                  ? 'bg-forest text-white'
+                                  : 'bg-paper-200 dark:bg-paper-700 text-ink-700 dark:text-ink-300'
+                              }`}
+                            >
+                              {dName}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Time selection with TimeInput12H */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-forest/10 dark:border-emerald-800/30">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-medium text-ink-600 dark:text-ink-400">From:</span>
+                            <TimeInput12H value={editCommStart} onChange={setEditCommStart} />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-medium text-ink-600 dark:text-ink-400">To:</span>
+                            <TimeInput12H value={editCommEnd} onChange={setEditCommEnd} />
+                          </div>
                         </div>
-                        <div className="text-ink-600 dark:text-ink-300 font-mono text-[11px] mt-0.5 font-medium">
-                          {formatTimeRange(c.startTime, c.endTime)} ·{' '}
-                          {c.daysOfWeek.map((d) => dayNames[d]).join(', ')}
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={cancelEditCommitment}
+                            className="px-2.5 py-1 text-xs text-ink-600 dark:text-ink-400 hover:bg-paper-200 dark:hover:bg-paper-700 rounded-md transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={saveEditCommitment}
+                            className="px-3 py-1 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-md flex items-center gap-1 shadow-2xs transition-all"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Save Changes</span>
+                          </button>
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDeleteCommitment(c.id)}
-                      className="text-ink-400 hover:text-red-500 dark:text-ink-400 dark:hover:text-red-400 p-1 transition-colors"
+                  ) : (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-xs shadow-2xs hover:border-forest/30 transition-all"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Shield className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-semibold text-ink-950 dark:text-white flex items-center gap-2 truncate">
+                            <span>{c.name}</span>
+                            {c.isFixed && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-forest/10 dark:bg-emerald-950/70 text-forest dark:text-emerald-300 border border-forest/20 dark:border-emerald-700/50 font-mono font-bold">
+                                FIXED
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-ink-600 dark:text-ink-300 font-mono text-[11px] mt-0.5 font-medium truncate">
+                            {formatTimeRange(c.startTime, c.endTime)} ·{' '}
+                            {c.daysOfWeek.map((d) => dayNames[d]).join(', ')}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <button
+                          type="button"
+                          onClick={() => startEditCommitment(c)}
+                          title="Edit activity name, time & days"
+                          className="p-1.5 rounded-md text-ink-500 hover:text-forest hover:bg-forest/10 dark:text-ink-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-950/50 transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCommitment(c.id)}
+                          title="Delete activity"
+                          className="p-1.5 rounded-md text-ink-400 hover:text-red-500 hover:bg-red-50 dark:text-ink-400 dark:hover:text-red-400 dark:hover:bg-red-950/30 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                )}
               </div>
             )}
 
@@ -708,7 +1032,11 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                   {draftSubjects.map((s, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-2.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-xs shadow-2xs"
+                      className={`flex items-center justify-between p-2.5 rounded-lg border text-xs shadow-2xs transition-all ${
+                        editingSubjectIndex === idx
+                          ? 'border-forest bg-forest/5 dark:border-emerald-600 dark:bg-emerald-950/20'
+                          : 'border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800'
+                      }`}
                     >
                       <div>
                         <span className="font-semibold text-ink-950 dark:text-white">
@@ -718,12 +1046,27 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                           Exam: {s.examDate} · {s.difficulty} difficulty · {s.topics.length} topics
                         </span>
                       </div>
-                      <button
-                        onClick={() => setDraftSubjects(draftSubjects.filter((_, i) => i !== idx))}
-                        className="text-ink-400 hover:text-red-500 dark:text-ink-400 dark:hover:text-red-400 p-1 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => startEditDraftSubject(idx)}
+                          title="Edit course & exam date"
+                          className="p-1 rounded text-ink-500 hover:text-forest hover:bg-forest/10 dark:text-ink-400 dark:hover:text-emerald-300 transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editingSubjectIndex === idx) cancelEditDraftSubject();
+                            setDraftSubjects(draftSubjects.filter((_, i) => i !== idx));
+                          }}
+                          title="Delete course"
+                          className="text-ink-400 hover:text-red-500 dark:text-ink-400 dark:hover:text-red-400 p-1 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -804,7 +1147,7 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
 
               <div>
                 <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1">
-                  Key Topics or Chapters (Comma-separated)
+                  Key Topics or Chapters (Quick Entry)
                 </label>
                 <input
                   type="text"
@@ -815,14 +1158,172 @@ export function OnboardingModal({ isOpen, onClose, onPlanCreated }: OnboardingMo
                 />
               </div>
 
-              <button
-                type="button"
-                onClick={handleAddDraftSubject}
-                className="px-4 py-2.5 rounded-lg bg-forest hover:bg-forest-hover text-white dark:bg-emerald-700 dark:hover:bg-emerald-600 dark:text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Add This Subject to List</span>
-              </button>
+              {/* Syllabus / Unit & Lesson Container System */}
+              <div className="pt-2 border-t border-paper-200 dark:border-paper-700/60 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200">
+                      Syllabus Units & Lesson Containers (Optional)
+                    </label>
+                    <p className="text-[11px] text-ink-500 dark:text-ink-400">
+                      Upload or paste your syllabus or lesson contents, or create a container for each unit or lesson and its contents.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setStep3ShowSyllabusDrawer(!step3ShowSyllabusDrawer)}
+                      className="px-2 py-1 text-[11px] rounded-md border border-forest/30 bg-forest/5 dark:bg-forest/15 text-forest dark:text-emerald-400 font-medium hover:bg-forest/10 flex items-center gap-1 transition-colors"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>{step3ShowSyllabusDrawer ? 'Hide Paste' : 'Paste Syllabus'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddStep3Unit}
+                      className="px-2 py-1 text-[11px] rounded-md bg-forest text-white hover:bg-forest-hover font-medium flex items-center gap-1 transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>+ Unit Container</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Paste drawer */}
+                {step3ShowSyllabusDrawer && (
+                  <div className="p-3 rounded-lg border border-forest/20 dark:border-forest/30 bg-forest/5 dark:bg-paper-850 space-y-2">
+                    <textarea
+                      rows={3}
+                      value={step3SyllabusText}
+                      onChange={(e) => setStep3SyllabusText(e.target.value)}
+                      placeholder={`Paste syllabus text or lesson contents here...\nUnit 1: Distributed Algorithms\n- Consensus protocols\n- Lamport timestamps`}
+                      className="w-full text-xs p-2 rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white font-mono placeholder:font-sans"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleParseStep3Syllabus(step3SyllabusText)}
+                        disabled={!step3SyllabusText.trim()}
+                        className="px-3 py-1 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        <span>Extract into Containers</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Render Unit Containers if any */}
+                {step3Units.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    {step3Units.map((u) => (
+                      <div
+                        key={u.id}
+                        className="p-2.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-paper-50 dark:bg-paper-900 space-y-2 text-xs"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 flex-1">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-forest/10 dark:bg-emerald-950 text-forest dark:text-emerald-400 border border-forest/20 shrink-0">
+                              {u.unitNumber}
+                            </span>
+                            <input
+                              type="text"
+                              value={u.title}
+                              onChange={(e) =>
+                                setStep3Units((prev) =>
+                                  prev.map((item) => (item.id === u.id ? { ...item, title: e.target.value } : item))
+                                )
+                              }
+                              placeholder="Unit / Lesson Name"
+                              className="flex-1 font-semibold text-xs px-2 py-0.5 rounded border border-paper-200 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-950 dark:text-white"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteStep3Unit(u.id)}
+                            className="text-ink-400 hover:text-red-500 p-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Topics inside unit */}
+                        <div className="flex flex-wrap gap-1.5 pl-1">
+                          {u.topics.map((tName, tIdx) => (
+                            <span
+                              key={tIdx}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white dark:bg-paper-800 border border-paper-300 dark:border-paper-700 text-xs text-ink-800 dark:text-ink-200"
+                            >
+                              <span>{tName}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTopicFromStep3Unit(u.id, tIdx)}
+                                className="text-ink-400 hover:text-red-500"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 pl-1">
+                          <input
+                            type="text"
+                            placeholder="Add lesson content / topic..."
+                            value={step3NewTopicByUnit[u.id] || ''}
+                            onChange={(e) =>
+                              setStep3NewTopicByUnit((prev) => ({ ...prev, [u.id]: e.target.value }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddTopicToStep3Unit(u.id);
+                              }
+                            }}
+                            className="flex-1 px-2 py-1 text-xs rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-900 dark:text-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleAddTopicToStep3Unit(u.id)}
+                            className="px-2 py-1 text-xs rounded bg-paper-200 dark:bg-paper-700 hover:bg-forest hover:text-white transition-colors"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddDraftSubject}
+                  className="px-4 py-2.5 rounded-lg bg-forest hover:bg-forest-hover text-white dark:bg-emerald-700 dark:hover:bg-emerald-600 dark:text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {editingSubjectIndex !== null ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Save Course Changes</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>+ Add This Subject to List</span>
+                    </>
+                  )}
+                </button>
+                {editingSubjectIndex !== null && (
+                  <button
+                    type="button"
+                    onClick={cancelEditDraftSubject}
+                    className="px-3 py-2 text-xs text-ink-600 dark:text-ink-400 hover:bg-paper-200 dark:hover:bg-paper-700 rounded-lg transition-colors"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-paper-200 dark:border-paper-800">
