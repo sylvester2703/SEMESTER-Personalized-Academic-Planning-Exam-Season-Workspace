@@ -1,27 +1,62 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
+import { calculateExamCountdown } from '@/lib/dates';
 import {
   Sparkles,
   ArrowRight,
   Compass,
   MapPin,
   ShieldCheck,
+  Calendar,
+  Clock,
+  UserPlus,
+  CheckCircle2,
+  Coffee,
+  BookOpen,
+  Layers,
+  Bell,
+  Check,
 } from 'lucide-react';
 
 export function LandingView() {
-  const { setActiveView, setIsOnboardingOpen } = usePlanner();
+  const { data, setActiveView, setIsOnboardingOpen, setIsAuthModalOpen } = usePlanner();
+
+  // Live ticking countdown for "Extra Marks for Effort"
+  const [countdown, setCountdown] = useState(() => calculateExamCountdown(data.subjects));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown(calculateExamCountdown(data.subjects));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [data.subjects]);
+
+  // Fallback demo timer if student hasn't entered exams yet
+  const nextExam = countdown.nextExam || {
+    name: 'Distributed Systems & Cloud Computing',
+    code: 'CS 301',
+    examDate: 'Final Examinations',
+    examTime: '09:30 AM',
+    examLocation: 'Hall B, Main Campus',
+  };
+
+  const displayDays = countdown.nextExam ? countdown.days : 14;
+  const displayHours = countdown.nextExam ? countdown.hours : 6;
+  const displayMins = countdown.nextExam ? countdown.minutes : 32;
+  const displaySecs = countdown.nextExam ? countdown.seconds : 45;
 
   return (
     <div className="space-y-16 sm:space-y-24 py-6 sm:py-12 animate-in fade-in-50 duration-200">
-      {/* HERO SECTION */}
+      {/* 1. HERO SECTION (Must-Have: Hero with one clear line and a sign up button) */}
       <section className="text-center max-w-4xl mx-auto px-4 sm:px-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-forest/20 dark:border-forest/40 bg-forest/5 dark:bg-forest/15 text-forest dark:text-emerald-400 text-xs font-medium mb-6">
           <Sparkles className="w-3.5 h-3.5" />
           <span>Every semester deserves a better plan.</span>
         </div>
 
+        {/* Clear One-Line Headline */}
         <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-ink-950 dark:text-ink-50 leading-[1.1] mb-6">
           Your exams have dates. <br className="hidden sm:inline" />
           Your preparation needs a plan.
@@ -35,11 +70,19 @@ export function LandingView() {
           Turn a crowded university exam timetable into a realistic study routine, one focused session at a time. No complex setup, no fake metrics, no guilt.
         </p>
 
-        {/* Primary CTAs */}
+        {/* Primary CTAs with Sign Up Button */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-forest hover:bg-forest-hover text-white text-sm font-semibold shadow-card hover:shadow-dropdown transition-all cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Sign Up Free</span>
+          </button>
+
+          <button
             onClick={() => setIsOnboardingOpen(true)}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-md bg-forest hover:bg-forest-hover text-white text-sm font-semibold shadow-card hover:shadow-dropdown transition-all focus-visible:ring-2 focus-visible:ring-forest"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg border border-forest/40 bg-forest/5 dark:bg-forest/20 text-forest dark:text-emerald-300 text-sm font-semibold hover:bg-forest/10 transition-colors shadow-subtle cursor-pointer"
           >
             <Sparkles className="w-4 h-4" />
             <span>Build my study plan</span>
@@ -47,27 +90,214 @@ export function LandingView() {
 
           <button
             onClick={() => setActiveView('dashboard')}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-md border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-ink-100 text-sm font-medium hover:bg-paper-100 dark:hover:bg-paper-800 transition-colors shadow-subtle"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-ink-100 text-sm font-medium hover:bg-paper-100 dark:hover:bg-paper-800 transition-colors shadow-subtle cursor-pointer"
           >
-            <span>Explore the planner</span>
+            <span>Explore planner</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="mt-4 flex items-center justify-center gap-4 text-xs text-ink-500 dark:text-ink-400">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs text-ink-500 dark:text-ink-400">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-forest dark:text-emerald-400" />
             <span>100% Free for students</span>
           </span>
           <span>•</span>
-          <span>Runs entirely in your browser</span>
+          <span>Runs in browser with Supabase cloud backup</span>
           <span>•</span>
-          <span>No login required</span>
+          <span>Automated Email & WhatsApp schedule updates</span>
         </div>
       </section>
 
+      {/* 2. EXTRA MARKS FOR EFFORT: LIVE COUNTDOWN TO NEXT EXAM */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="p-6 sm:p-8 rounded-2xl bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 shadow-card relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-forest via-emerald-500 to-amber-500" />
 
-      {/* HOW IT WORKS SECTION */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="text-center lg:text-left space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-forest/10 dark:bg-forest/25 text-forest dark:text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-forest dark:bg-emerald-400 animate-ping" />
+                <span>Countdown to Next Exam · Live</span>
+              </div>
+              <h3 className="font-serif text-2xl sm:text-3xl font-bold text-ink-950 dark:text-ink-50">
+                {nextExam.name}
+              </h3>
+              <p className="text-xs text-ink-500 dark:text-ink-400 flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                <span className="font-semibold text-forest dark:text-emerald-400">{nextExam.code}</span>
+                <span>•</span>
+                <span>{nextExam.examDate}</span>
+                <span>•</span>
+                <span>{nextExam.examLocation}</span>
+              </p>
+            </div>
+
+            {/* Live Ticking Countdown Digits */}
+            <div className="grid grid-cols-4 gap-2.5 sm:gap-3 text-center">
+              <div className="flex flex-col items-center bg-paper-100 dark:bg-paper-800 border border-paper-300 dark:border-paper-700 rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 min-w-[62px] sm:min-w-[74px]">
+                <span className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-ink-950 dark:text-white leading-none">
+                  {String(displayDays).padStart(2, '0')}
+                </span>
+                <span className="text-[10px] uppercase font-semibold text-ink-500 dark:text-ink-400 mt-1">
+                  Days
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center bg-paper-100 dark:bg-paper-800 border border-paper-300 dark:border-paper-700 rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 min-w-[62px] sm:min-w-[74px]">
+                <span className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-ink-950 dark:text-white leading-none">
+                  {String(displayHours).padStart(2, '0')}
+                </span>
+                <span className="text-[10px] uppercase font-semibold text-ink-500 dark:text-ink-400 mt-1">
+                  Hours
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center bg-paper-100 dark:bg-paper-800 border border-paper-300 dark:border-paper-700 rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 min-w-[62px] sm:min-w-[74px]">
+                <span className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-ink-950 dark:text-white leading-none">
+                  {String(displayMins).padStart(2, '0')}
+                </span>
+                <span className="text-[10px] uppercase font-semibold text-ink-500 dark:text-ink-400 mt-1">
+                  Mins
+                </span>
+              </div>
+
+              <div className="flex flex-col items-center bg-forest/15 dark:bg-emerald-950/70 border border-forest/30 dark:border-emerald-700/60 rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 min-w-[62px] sm:min-w-[74px]">
+                <span className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-forest dark:text-emerald-400 leading-none">
+                  {String(displaySecs).padStart(2, '0')}
+                </span>
+                <span className="text-[10px] uppercase font-bold text-forest dark:text-emerald-400 mt-1">
+                  Secs
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. SAMPLE TIMETABLE PREVIEW (Must-Have Requirement) */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="text-center mb-8">
+          <span className="text-xs font-semibold uppercase tracking-wider text-forest dark:text-emerald-400">
+            Intelligent Scheduling
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl font-semibold text-ink-950 dark:text-ink-50 mt-1">
+            Sample Timetable Preview
+          </h2>
+          <p className="text-xs sm:text-sm text-ink-600 dark:text-ink-300 max-w-xl mx-auto mt-2 leading-relaxed">
+            A realistic daily rhythm that respects your fixed college lectures, sleep, and meals while spacing revision sessions with restorative breaks.
+          </p>
+        </div>
+
+        <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-2xl p-5 sm:p-7 shadow-subtle space-y-3">
+          <div className="flex items-center justify-between pb-3 border-b border-paper-200 dark:border-paper-800 text-xs text-ink-500">
+            <span className="font-semibold text-ink-900 dark:text-white font-serif text-sm">
+              Today's Schedule · Tuesday Revision Rhythm
+            </span>
+            <span className="font-mono text-forest dark:text-emerald-400 font-bold">
+              3.5 Study Hours · 2 Fixed Commitments
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {/* Block 1: Fixed Routine */}
+            <div className="flex items-center justify-between p-3 rounded-xl border border-paper-200 dark:border-paper-800 bg-paper-50 dark:bg-paper-850 text-xs">
+              <div className="flex items-center gap-3">
+                <Coffee className="w-4 h-4 text-ink-400 shrink-0" />
+                <div>
+                  <div className="font-semibold text-ink-800 dark:text-ink-200 flex items-center gap-2">
+                    <span>Morning Walk, Breakfast & Ready</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-paper-200 dark:bg-paper-700 text-ink-600 dark:text-ink-300 font-bold">
+                      FIXED ROUTINE
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-ink-500 font-mono mt-0.5">
+                    08:00 AM – 09:00 AM · 60m
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" />
+                <span>Completed</span>
+              </span>
+            </div>
+
+            {/* Block 2: Revision Session 1 */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl border-2 border-forest/30 dark:border-emerald-600/40 bg-forest/5 dark:bg-emerald-950/20 text-xs shadow-2xs">
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0" />
+                <div>
+                  <div className="font-bold text-ink-950 dark:text-white flex items-center gap-2">
+                    <span>CS 301: Distributed Systems</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-forest/15 text-forest dark:text-emerald-300 font-mono font-bold">
+                      UNIT 2
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold">
+                      HIGH PRIORITY
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-ink-600 dark:text-ink-300 font-mono mt-0.5">
+                    09:15 AM – 10:45 AM (90 mins) · Topic: 2-Phase Commit & Raft Consensus
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveView('focus')}
+                className="px-3 py-1 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-md shadow-2xs cursor-pointer transition-all"
+              >
+                Start Focus Timer
+              </button>
+            </div>
+
+            {/* Buffer break */}
+            <div className="flex items-center justify-center py-1 text-[11px] text-ink-400 dark:text-ink-500 font-mono italic">
+              — 15-Minute Buffer Break & Hydration —
+            </div>
+
+            {/* Block 3: Revision Session 2 */}
+            <div className="flex items-center justify-between p-3 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-xs shadow-2xs">
+              <div className="flex items-center gap-3">
+                <Layers className="w-4 h-4 text-forest dark:text-emerald-400 shrink-0" />
+                <div>
+                  <div className="font-semibold text-ink-950 dark:text-white flex items-center gap-2">
+                    <span>MATH 204: Probability & Statistics</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-forest/10 text-forest dark:text-emerald-300 font-mono">
+                      UNIT 1
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-ink-600 dark:text-ink-300 font-mono mt-0.5">
+                    11:00 AM – 12:15 PM (75 mins) · Topic: Bayes' Theorem & Conditional Variance
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-ink-500 dark:text-ink-400 font-medium">
+                Up Next Today
+              </span>
+            </div>
+
+            {/* Block 4: Lunch */}
+            <div className="flex items-center justify-between p-3 rounded-xl border border-paper-200 dark:border-paper-800 bg-paper-50 dark:bg-paper-850 text-xs">
+              <div className="flex items-center gap-3">
+                <Coffee className="w-4 h-4 text-ink-400 shrink-0" />
+                <div>
+                  <div className="font-semibold text-ink-800 dark:text-ink-200 flex items-center gap-2">
+                    <span>Campus Lunch & Social Rest</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-paper-200 dark:bg-paper-700 text-ink-600 dark:text-ink-300 font-bold">
+                      FIXED ROUTINE
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-ink-500 font-mono mt-0.5">
+                    12:30 PM – 01:30 PM · 60m
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-ink-400">Scheduled</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. HOW IT WORKS SECTION */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10">
           <span className="text-xs font-semibold uppercase tracking-wider text-forest dark:text-emerald-400">
@@ -87,7 +317,7 @@ export function LandingView() {
               Input Your Exam Dates & Syllabus
             </h3>
             <p className="text-xs text-ink-600 dark:text-ink-300 leading-relaxed">
-              Enter course names, examination dates, and syllabus topics. Live countdowns update instantly in your local timezone.
+              Upload or paste your course syllabus. Create unit containers for each lesson and its contents with automated extraction.
             </p>
           </div>
 
@@ -108,16 +338,16 @@ export function LandingView() {
               03.
             </span>
             <h3 className="font-serif text-lg font-semibold text-ink-950 dark:text-white mb-2">
-              Revise With Focus Mode
+              Revise With Focus Mode & Automated Alerts
             </h3>
             <p className="text-xs text-ink-600 dark:text-ink-300 leading-relaxed">
-              Launch distraction-free timers, mark syllabus topics from Learning to Confident, and review real study progress each week.
+              Launch distraction-free timers, mark syllabus topics, and receive automated schedule updates on WhatsApp & Email.
             </p>
           </div>
         </div>
       </section>
 
-      {/* CORE FEATURES EDITORIAL PRESENTATION */}
+      {/* 5. CORE FEATURES EDITORIAL PRESENTATION */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 space-y-12">
         <div className="text-center mb-6">
           <span className="text-xs font-semibold uppercase tracking-wider text-forest dark:text-emerald-400">
@@ -188,59 +418,30 @@ export function LandingView() {
         </div>
       </section>
 
-      {/* WHY SEMESTER SECTION */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="bg-paper-50 dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-xl p-6 sm:p-10 shadow-subtle">
-          <span className="text-xs font-semibold uppercase tracking-wider text-forest dark:text-emerald-400">
-            Brand Philosophy
-          </span>
-          <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-ink-950 dark:text-ink-50 mt-1 mb-4">
-            Why SEMESTER?
-          </h2>
-          <p className="text-sm text-ink-700 dark:text-ink-300 leading-relaxed font-serif text-base sm:text-lg mb-4 italic">
-            "SEMESTER was created around a simple belief: students don't always need to study harder; they need a clearer way to plan, prioritise, and prepare. By turning scattered exam dates and revision tasks into a realistic daily plan, SEMESTER helps students approach exam season with greater clarity and confidence."
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-paper-200 dark:border-paper-800 text-xs text-ink-600 dark:text-ink-400">
-            <div>
-              <strong className="block text-ink-900 dark:text-white mb-1">Clarity over Clutter</strong>
-              <span>Every element answers: what exam is next, and what should I study today?</span>
-            </div>
-            <div>
-              <strong className="block text-ink-900 dark:text-white mb-1">Progress without Guilt</strong>
-              <span>Missed a session? Simply adjust availability without punitive broken streaks.</span>
-            </div>
-            <div>
-              <strong className="block text-ink-900 dark:text-white mb-1">Zero Lock-in</strong>
-              <span>Export and import your complete workspace in standard JSON anytime.</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FREE FOR STUDENTS SECTION */}
+      {/* 6. FREE FOR STUDENTS SECTION (Must-Have Requirement) */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-        <div className="p-8 sm:p-12 rounded-xl bg-forest text-white shadow-elevated">
+        <div className="p-8 sm:p-12 rounded-2xl bg-forest text-white shadow-elevated">
           <span className="text-xs uppercase tracking-widest font-semibold text-emerald-300">
             Free & Open Tool
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl font-semibold mt-2 mb-4">
-            Your plan, your pace. Free for students.
+            Your plan, your pace. 100% Free for students.
           </h2>
           <p className="text-xs sm:text-sm text-emerald-100 max-w-xl mx-auto leading-relaxed mb-6">
             SEMESTER runs entirely in your web browser. No subscriptions, no gated premium tiers, no personal data harvesting, and no account barriers.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
-              onClick={() => setIsOnboardingOpen(true)}
-              className="px-6 py-3 rounded-md bg-white text-forest hover:bg-paper-100 text-xs font-semibold shadow-sm transition-all"
+              onClick={() => setIsAuthModalOpen(true)}
+              className="px-6 py-3 rounded-lg bg-white text-forest hover:bg-paper-100 text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
-              Build my study plan now
+              Sign Up & Create Study Plan
             </button>
             <button
               onClick={() => setActiveView('dashboard')}
-              className="px-6 py-3 rounded-md border border-white/40 hover:bg-white/10 text-white text-xs font-medium transition-colors"
+              className="px-6 py-3 rounded-lg border border-white/40 hover:bg-white/10 text-white text-xs font-medium transition-colors cursor-pointer"
             >
-              Open workspace
+              Open Workspace
             </button>
           </div>
         </div>

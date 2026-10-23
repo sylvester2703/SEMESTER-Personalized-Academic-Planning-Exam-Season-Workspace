@@ -18,8 +18,17 @@ function escapeIcsText(text: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { subjects = [], sessions = [], semesterTitle = 'Semester Exam Plan' } = body;
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or missing JSON in request body' },
+        { status: 400 }
+      );
+    }
+
+    const { subjects = [], sessions = [], semesterTitle = 'Semester Exam Plan' } = body || {};
 
     const lines: string[] = [
       'BEGIN:VCALENDAR',

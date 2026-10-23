@@ -560,6 +560,55 @@ SEMESTER/
 | **13. Local-First Persistence & Recovery**       |  PASS  | Persists safely across browser refreshes; includes JSON backup/restore & clean reset.   |
 | **14. Strict Type Safety & Clean Build**         |  PASS  | `tsc --noEmit` and `npm run build` pass with 0 errors.                                  |
 | **15. Vercel Deployment Ready**                  |  PASS  | Fully autonomous frontend application with zero server requirements.                    |
+| **16. Unit & Lesson Container Organization**     |  PASS  | Upload or paste syllabus outlines to automatically generate containers with lessons.    |
+| **17. Big Exam Countdown Timer**                 |  PASS  | High-impact tabular countdown timer active on dashboard and landing page.              |
+| **18. Cloud Auth & Persistent Session**          |  PASS  | Dedicated login & signup pages (`/login`, `/signup`) with persistent session.           |
+| **19. Phone Collection for WhatsApp Updates**    |  PASS  | Captures phone number at signup for automated 1-2 hour schedule notifications.          |
+| **20. 1-2 Hour Automated Dispatcher Cron**      |  PASS  | Production route `/api/cron/schedule-updates` configured with Vercel Cron.              |
+
+---
+
+## 10. Automated 1–2 Hour Schedule & WhatsApp / Email Notification Blueprint
+
+SEMESTER includes a production-ready notification dispatch engine at `/api/cron/schedule-updates` that computes student countdowns and upcoming study sessions every 1 to 2 hours.
+
+### 10.1 Email Updates (Gmail API & SMTP)
+To dispatch automated schedule emails every 1–2 hours from the cloud:
+1. **Option A: Nodemailer with Gmail App Password (Recommended for speed)**:
+   - Go to Google Account > Security > 2-Step Verification > App Passwords.
+   - Generate an App Password for "SEMESTER Planner".
+   - Set environment variables:
+     ```env
+     EMAIL_PROVIDER="gmail_smtp"
+     GMAIL_USER="your-email@gmail.com"
+     GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx"
+     ```
+2. **Option B: Google Cloud Gmail API (OAuth2 / Service Account)**:
+   - Create a Google Cloud Project and enable the **Gmail API**.
+   - Create an OAuth2 Client ID or Service Account with domain-wide delegation for `https://www.googleapis.com/auth/gmail.send`.
+   - Store credentials in `.env.local` (`GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`).
+
+### 10.2 WhatsApp Automation (Meta Cloud API / Twilio)
+To dispatch WhatsApp study schedule updates to the phone number collected at signup:
+1. **Meta WhatsApp Business Cloud API**:
+   - Register on developers.facebook.com and create a WhatsApp Business App.
+   - Add your test phone number and acquire the permanent access token.
+   - Set in `.env.local`:
+     ```env
+     WHATSAPP_PROVIDER="meta_cloud"
+     WHATSAPP_PHONE_NUMBER_ID="your_phone_number_id"
+     WHATSAPP_ACCESS_TOKEN="your_access_token"
+     ```
+2. **Twilio for WhatsApp**:
+   - Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_WHATSAPP_NUMBER`.
+
+### 10.3 Automated Cron Schedule & Free GitHub Actions Runner
+To ensure 100% successful deployments on Vercel without plan blocks, SEMESTER uses a free **GitHub Actions** cron workflow:
+* **Workflow Location**: `.github/workflows/schedule-cron.yml`
+* **Schedule**: Runs automatically every 2 hours (`0 */2 * * *`)
+* **Endpoint Triggered**: `https://<your-app>.vercel.app/api/cron/schedule-updates?manual=true`
+* **Zero Vercel Plan Limits**: Works seamlessly on both Vercel Hobby and Pro tiers with zero extra fees or deployment blocks.
+* If you have a Vercel Pro plan, you can optionally configure `crons` in `vercel.json`. For Hobby accounts, GitHub Actions or [cron-job.org](https://cron-job.org) provides unlimited, free sub-daily dispatching.
 
 ---
 

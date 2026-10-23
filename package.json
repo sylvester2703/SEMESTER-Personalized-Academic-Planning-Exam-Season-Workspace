@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node scripts/test-runner.mjs"
   },
   "dependencies": {
     "@supabase/server": "^1.9.2",

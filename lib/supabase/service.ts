@@ -6,13 +6,20 @@ export const supabase = createClient();
 /**
  * Auth operations
  */
-export async function signUpWithEmail(email: string, password: string, fullName?: string) {
+export async function signUpWithEmail(
+  email: string,
+  password: string,
+  fullName?: string,
+  phone?: string
+) {
   return await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: fullName || 'Student',
+        phone: phone || '',
+        whatsapp_notifications: Boolean(phone),
       },
     },
   });
@@ -181,6 +188,10 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
       goals: [],
       examChecklist: [],
       planExplanation: profileRow?.plan_explanation || undefined,
+      email: user.email || profileRow?.email || undefined,
+      phone: (user.user_metadata as any)?.phone || profileRow?.phone || undefined,
+      emailScheduleUpdates: true,
+      whatsappScheduleUpdates: Boolean((user.user_metadata as any)?.phone || profileRow?.phone),
       createdAt: profileRow?.created_at || new Date().toISOString(),
     };
 

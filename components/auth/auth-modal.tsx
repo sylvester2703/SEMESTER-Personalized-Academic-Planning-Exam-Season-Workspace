@@ -13,21 +13,27 @@ import {
   Loader2,
   ShieldCheck,
   Cloud,
+  Phone,
+  BellRing,
 } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialMode?: 'signin' | 'signup';
 }
 
-export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
-  const { addToast, syncToCloud, restoreFromCloud } = usePlanner();
+export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }: AuthModalProps) {
+  const { addToast, syncToCloud, restoreFromCloud, updateProfile, setActiveView } = usePlanner();
 
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>(initialMode);
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [enableUpdates, setEnableUpdates] = useState(true);
+  const [updateInterval, setUpdateInterval] = useState<'1' | '2'>('2');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -49,20 +55,31 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           throw new Error('Password must be at least 6 characters long.');
         }
 
-        const { data, error } = await signUpWithEmail(email, password, fullName);
+        const { data, error } = await signUpWithEmail(email, password, fullName, phone);
         if (error) throw error;
+
+        updateProfile({
+          displayName: fullName.trim() || email.split('@')[0],
+          email: email.trim(),
+          phone: phone.trim() || undefined,
+          emailScheduleUpdates: enableUpdates,
+          whatsappScheduleUpdates: Boolean(phone && enableUpdates),
+          notificationIntervalHours: Number(updateInterval) || 2,
+        });
 
         if (data.session) {
           addToast({
             type: 'success',
-            title: 'Account created',
-            description: 'Your Supabase cloud account is active. Syncing your study plan...',
+            title: 'Account created & synced',
+            description: 'Your Supabase cloud account is active. Study schedule updates configured.',
           });
           await syncToCloud();
+          setActiveView('dashboard');
           onSuccess?.();
           onClose();
         } else {
           setSuccessMsg('Account created! Please check your email for the verification link.');
+          setActiveView('dashboard');
         }
       } else if (mode === 'signin') {
         if (!email || !password) {
@@ -78,8 +95,14 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           description: `Signed in as ${data.user?.email}.`,
         });
 
+        updateProfile({
+          email: data.user?.email || email,
+          phone: (data.user?.user_metadata as any)?.phone || undefined,
+        });
+
         // Automatically fetch cloud data or offer sync
         await restoreFromCloud();
+        setActiveView('dashboard');
         onSuccess?.();
         onClose();
       } else if (mode === 'forgot') {
@@ -184,6 +207,57 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               />
             </div>
           </div>
+
+          {mode === 'signup' && (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-ink-700 dark:text-ink-300 mb-1">
+                  Phone / WhatsApp Number
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 absolute left-3 top-2.5 text-ink-400" />
+                  <input
+                    type="tel"
+                    placeholder="+91 98765 43210 or +1 (555) 000-0000"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full text-xs pl-9 pr-3 py-2 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-900 dark:text-ink-100"
+                  />
+                </div>
+                <p className="text-[11px] text-ink-500 dark:text-ink-400 mt-1">
+                  Required for automated WhatsApp schedule updates & countdown alerts.
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-lg border border-forest/20 dark:border-forest/40 bg-forest/5 dark:bg-forest/15 space-y-2">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={enableUpdates}
+                    onChange={(e) => setEnableUpdates(e.target.checked)}
+                    className="mt-0.5 rounded text-forest focus:ring-forest"
+                  />
+                  <span className="text-xs text-ink-800 dark:text-ink-200">
+                    Send automated study schedule & countdown updates on <strong>Email & WhatsApp</strong>
+                  </span>
+                </label>
+                {enableUpdates && (
+                  <div className="flex items-center gap-2 pl-5 text-[11px] text-ink-600 dark:text-ink-400">
+                    <BellRing className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />
+                    <span>Interval:</span>
+                    <select
+                      value={updateInterval}
+                      onChange={(e) => setUpdateInterval(e.target.value as any)}
+                      className="text-xs px-2 py-0.5 rounded border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-ink-900 dark:text-white"
+                    >
+                      <option value="1">Every 1 hour</option>
+                      <option value="2">Every 2 hours (Recommended)</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {mode !== 'forgot' && (
             <div>
