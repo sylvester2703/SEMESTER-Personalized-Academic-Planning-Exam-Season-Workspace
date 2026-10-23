@@ -1,0 +1,24 @@
+name: Automated Study Schedule & Exam Countdown Dispatcher
+
+on:
+  schedule:
+    # Runs every 2 hours (free on GitHub Actions)
+    - cron: '0 */2 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  dispatch-schedule-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger SEMESTER Schedule Updates
+        run: |
+          URL="https://${{ secrets.VERCEL_PROJECT_DOMAIN || 'semester-planner.vercel.app' }}/api/cron/schedule-updates?manual=true"
+          echo "Triggering automated schedule update: $URL"
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" "$URL")
+          echo "$RESPONSE"
+          STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 300 ]; then
+            echo "Successfully dispatched schedule updates!"
+          else
+            echo "Warning: Received HTTP status $STATUS"
+          fi

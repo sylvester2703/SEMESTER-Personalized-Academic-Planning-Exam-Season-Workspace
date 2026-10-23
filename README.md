@@ -602,19 +602,13 @@ To dispatch WhatsApp study schedule updates to the phone number collected at sig
 2. **Twilio for WhatsApp**:
    - Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_WHATSAPP_NUMBER`.
 
-### 10.3 Automated Cron Schedule
-The endpoint is triggered automatically by Vercel Cron according to `vercel.json`:
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/schedule-updates",
-      "schedule": "0 8 * * *"
-    }
-  ]
-}
-```
-> **Note on Vercel Plan Limits**: Vercel's Hobby (free) plan accepts daily cron triggers (`0 8 * * *`). To run notifications every 1–2 hours on the free tier, trigger `https://<your-app>.vercel.app/api/cron/schedule-updates?manual=true` via an external scheduler (such as [cron-job.org](https://cron-job.org) or GitHub Actions) with your `CRON_SECRET` header. On Vercel Pro, `0 */2 * * *` can be configured directly in `vercel.json`.
+### 10.3 Automated Cron Schedule & Free GitHub Actions Runner
+To ensure 100% successful deployments on Vercel without plan blocks, SEMESTER uses a free **GitHub Actions** cron workflow:
+* **Workflow Location**: `.github/workflows/schedule-cron.yml`
+* **Schedule**: Runs automatically every 2 hours (`0 */2 * * *`)
+* **Endpoint Triggered**: `https://<your-app>.vercel.app/api/cron/schedule-updates?manual=true`
+* **Zero Vercel Plan Limits**: Works seamlessly on both Vercel Hobby and Pro tiers with zero extra fees or deployment blocks.
+* If you have a Vercel Pro plan, you can optionally configure `crons` in `vercel.json`. For Hobby accounts, GitHub Actions or [cron-job.org](https://cron-job.org) provides unlimited, free sub-daily dispatching.
 
 ---
 
