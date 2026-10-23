@@ -21,6 +21,9 @@ import {
   ChevronDown,
   Flame,
   RotateCcw,
+  User,
+  UserPlus,
+  LogOut,
 } from 'lucide-react';
 
 interface AppHeaderProps {
@@ -45,6 +48,9 @@ export function AppHeader({
     setIsOnboardingOpen,
     setIsRescueModalOpen,
     leaveSamplePlan,
+    currentUser,
+    setIsAuthModalOpen,
+    signOut,
   } = usePlanner();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -328,6 +334,43 @@ export function AppHeader({
               )}
             </button>
 
+            {/* Auth Account / Sign In & Sign Up Controls */}
+            {currentUser ? (
+              <div className="hidden sm:flex items-center gap-1.5 pl-2 border-l border-paper-300 dark:border-paper-800">
+                <div
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium"
+                  title={`Signed in as ${currentUser.email || 'Student'}`}
+                >
+                  <User className="w-3.5 h-3.5 shrink-0" />
+                  <span className="max-w-[110px] truncate">{currentUser.email?.split('@')[0] || 'Student'}</span>
+                </div>
+                <button
+                  onClick={() => signOut()}
+                  className="inline-flex items-center gap-1 text-xs text-ink-500 hover:text-rose-600 dark:hover:text-rose-400 px-2 py-1 transition-colors cursor-pointer"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 pl-2 border-l border-paper-300 dark:border-paper-800">
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-2.5 py-1.5 rounded-md text-xs font-semibold text-ink-700 dark:text-ink-200 hover:text-forest dark:hover:text-emerald-400 hover:bg-paper-200/70 dark:hover:bg-paper-800 transition-colors cursor-pointer"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Sign Up</span>
+                </button>
+              </div>
+            )}
+
             {/* Mobile menu toggle (secondary access on mobile if needed) */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -420,6 +463,49 @@ export function AppHeader({
               <Settings className="w-4 h-4" />
               <span>Settings & Daily Routine</span>
             </button>
+
+            <div className="my-1 border-t border-paper-300/60 dark:border-paper-800" />
+
+            {/* Mobile Auth Actions */}
+            {currentUser ? (
+              <div className="flex items-center justify-between px-3 py-2 bg-paper-200/50 dark:bg-paper-800/50 rounded-md">
+                <div className="flex items-center gap-2 text-xs font-medium text-forest dark:text-emerald-400">
+                  <User className="w-4 h-4" />
+                  <span className="truncate">{currentUser.email || 'Student'}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    signOut();
+                  }}
+                  className="text-xs text-rose-600 font-semibold"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="w-full py-2 px-3 rounded-md border border-paper-300 dark:border-paper-700 text-ink-800 dark:text-ink-100 text-xs font-semibold text-center"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="w-full py-2 px-3 rounded-md bg-forest text-white text-xs font-semibold text-center flex items-center justify-center gap-1.5"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Sign Up</span>
+                </button>
+              </div>
+            )}
 
             {data.profile.isSampleData && (
               <button
