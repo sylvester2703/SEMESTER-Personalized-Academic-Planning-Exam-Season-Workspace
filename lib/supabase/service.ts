@@ -58,11 +58,19 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
     }
 
     // 1. Fetch profile
-    const { data: profileRow } = await supabase
+    const { data: profileRow, error: profErr } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
+
+    if (profErr && (profErr.code === 'PGRST205' || profErr.message?.includes('schema cache'))) {
+      console.warn('[Supabase Service] Database tables not yet migrated in Supabase. Falling back to local storage.');
+      return {
+        success: false,
+        error: 'Database tables not yet created in Supabase. Your study planner is currently running safely in local storage.',
+      };
+    }
 
     // 2. Fetch subjects
     const { data: subjectRows, error: subjErr } = await supabase
@@ -70,7 +78,15 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
       .select('*')
       .eq('user_id', user.id);
 
-    if (subjErr) throw subjErr;
+    if (subjErr) {
+      if (subjErr.code === 'PGRST205' || subjErr.message?.includes('schema cache')) {
+        return {
+          success: false,
+          error: 'Database tables not yet created in Supabase. Your study planner is running safely in local storage.',
+        };
+      }
+      throw subjErr;
+    }
 
     // 3. Fetch topics
     const { data: topicRows, error: topErr } = await supabase
@@ -78,7 +94,7 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
       .select('*')
       .eq('user_id', user.id);
 
-    if (topErr) throw topErr;
+    if (topErr && topErr.code !== 'PGRST205') throw topErr;
 
     // 4. Fetch study sessions
     const { data: sessionRows, error: sessErr } = await supabase
@@ -86,7 +102,7 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
       .select('*')
       .eq('user_id', user.id);
 
-    if (sessErr) throw sessErr;
+    if (sessErr && sessErr.code !== 'PGRST205') throw sessErr;
 
     // 5. Fetch routine commitments
     const { data: routineRows, error: routErr } = await supabase
@@ -94,7 +110,7 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
       .select('*')
       .eq('user_id', user.id);
 
-    if (routErr) throw routErr;
+    if (routErr && routErr.code !== 'PGRST205') throw routErr;
 
     // 6. Fetch focus records
     const { data: focusRows } = await supabase
@@ -222,7 +238,7 @@ export async function syncWorkspaceToSupabase(data: AppData): Promise<{ success:
     }
 
     // 1. Upsert Profile
-    await supabase.from('profiles').upsert({
+    const { error: profErr } = await supabase.from('profiles').upsert({
       id: user.id,
       display_name: data.profile.displayName,
       semester_name: data.profile.semesterName,
@@ -239,6 +255,16 @@ export async function syncWorkspaceToSupabase(data: AppData): Promise<{ success:
       onboarded: data.profile.onboarded,
       updated_at: new Date().toISOString(),
     });
+
+    if (profErr) {
+      if (profErr.code === 'PGRST205' || profErr.message?.includes('schema cache')) {
+        return {
+          success: false,
+          error: 'Supabase database tables are not initialized yet. Your study planner is currently running safely in local storage.',
+        };
+      }
+      throw profErr;
+    }
 
     // 2. Synchronize Subjects
     if (data.subjects.length > 0) {

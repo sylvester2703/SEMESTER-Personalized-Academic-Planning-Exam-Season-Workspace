@@ -26,14 +26,26 @@ export default function LoginPage() {
       }
 
       const { data, error } = await signInWithEmail(email, password);
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('Email not confirmed')) {
+          throw new Error('Email address not yet confirmed. Please check your inbox for the confirmation link, or disable "Confirm email" in your Supabase Auth dashboard.');
+        }
+        throw error;
+      }
 
       setSuccessMsg(`Welcome back! Signed in as ${data.user?.email}. Redirecting to your study plan...`);
       setTimeout(() => {
         router.push('/');
       }, 1000);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Unable to sign in. Please check your credentials.');
+      console.error('[Login Error]:', err);
+      let msg = err.message || 'Unable to sign in. Please check your credentials.';
+      if (msg.includes('Failed to fetch')) {
+        msg = 'Network connection issue contacting Supabase cloud. Please verify your connection or check if an ad-blocker / shield is blocking supabase.co.';
+      } else if (msg.includes('Email not confirmed')) {
+        msg = 'Email address not yet confirmed. Please check your inbox for the confirmation link, or disable "Confirm email" in your Supabase Auth dashboard.';
+      }
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }

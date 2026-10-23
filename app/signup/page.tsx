@@ -47,14 +47,25 @@ export default function SignupPage() {
       const { data, error } = await signUpWithEmail(email, password, fullName, phone);
       if (error) throw error;
 
-      setSuccessMsg(
-        'Account created successfully! Session is saved on this device. Redirecting to your workspace...'
-      );
-      setTimeout(() => {
-        router.push('/');
-      }, 1200);
+      if (data?.session) {
+        setSuccessMsg(
+          'Account created successfully! Session is saved on this device. Redirecting to your workspace...'
+        );
+        setTimeout(() => {
+          router.push('/');
+        }, 1200);
+      } else {
+        setSuccessMsg(
+          'Account created successfully! If email confirmation is enabled on your Supabase project, please check your inbox for the verification link before logging in.'
+        );
+      }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Unable to create account. Please try again.');
+      console.error('[Signup Error]:', err);
+      let msg = err.message || 'Unable to create account. Please try again.';
+      if (msg.includes('Failed to fetch')) {
+        msg = 'Network connection issue contacting Supabase cloud. Please verify your connection or check if an ad-blocker / shield is blocking supabase.co.';
+      }
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }

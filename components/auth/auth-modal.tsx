@@ -78,8 +78,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
           onSuccess?.();
           onClose();
         } else {
-          setSuccessMsg('Account created! Please check your email for the verification link.');
-          setActiveView('dashboard');
+          setSuccessMsg('Account created successfully! If email confirmation is enabled on your Supabase project, check your inbox for the verification link.');
+          addToast({
+            type: 'info',
+            title: 'Account Created',
+            description: 'Account registered. If confirmation is required, check your email inbox.',
+          });
         }
       } else if (mode === 'signin') {
         if (!email || !password) {
@@ -87,7 +91,12 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
         }
 
         const { data, error } = await signInWithEmail(email, password);
-        if (error) throw error;
+        if (error) {
+          if (error.message?.includes('Email not confirmed')) {
+            throw new Error('Email address not yet confirmed. Please check your inbox for the verification link, or disable "Confirm email" in your Supabase Auth dashboard.');
+          }
+          throw error;
+        }
 
         addToast({
           type: 'success',
@@ -116,7 +125,14 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
         setSuccessMsg('Password reset instructions have been dispatched to your email.');
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Authentication request failed.');
+      console.error('[AuthModal Error]:', err);
+      let msg = err.message || 'Authentication request failed.';
+      if (msg.includes('Failed to fetch')) {
+        msg = 'Network connection issue contacting Supabase cloud. Please verify your connection or check if an ad-blocker / shield is blocking supabase.co.';
+      } else if (msg.includes('Email not confirmed')) {
+        msg = 'Email address not yet confirmed. Please check your inbox for the verification link, or disable "Confirm email" in your Supabase Auth dashboard.';
+      }
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }

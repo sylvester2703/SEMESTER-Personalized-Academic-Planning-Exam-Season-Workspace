@@ -1027,12 +1027,20 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
             });
             return true;
           } else {
-            setSyncStatus('error');
-            addToast({
-              type: 'error',
-              title: 'Sync failed',
-              description: res.error || 'Unable to sync to cloud.',
-            });
+            setSyncStatus('idle');
+            if (res.error?.includes('local storage') || res.error?.includes('not yet created') || res.error?.includes('not initialized')) {
+              addToast({
+                type: 'info',
+                title: 'Saved in Local Storage',
+                description: 'Your study plan is safely stored in local browser storage.',
+              });
+            } else {
+              addToast({
+                type: 'error',
+                title: 'Sync notification',
+                description: res.error || 'Unable to sync to cloud.',
+              });
+            }
             return false;
           }
         },
