@@ -32,14 +32,24 @@ export function calculateExamCountdown(subjects: Subject[], now: Date = new Date
     };
   }
 
-  // Parse exam dates into full Date objects with times
-  const parsed = subjects.map((subj) => {
-    const timeStr = subj.examTime || '09:00';
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const dateObj = parseISO(subj.examDate);
-    dateObj.setHours(hours, minutes, 0, 0);
-    return { subject: subj, targetDate: dateObj };
-  });
+  // Parse exam dates into full Date objects with times safely
+  const parsed = subjects
+    .filter((subj) => Boolean(subj?.examDate))
+    .map((subj) => {
+      try {
+        const timeStr = subj.examTime || '09:00';
+        const parts = timeStr.split(':').map(Number);
+        const hours = isNaN(parts[0]) ? 9 : parts[0];
+        const minutes = isNaN(parts[1]) ? 0 : parts[1];
+        const dateObj = parseISO(subj.examDate);
+        if (isNaN(dateObj.getTime())) return null;
+        dateObj.setHours(hours, minutes, 0, 0);
+        return { subject: subj, targetDate: dateObj };
+      } catch {
+        return null;
+      }
+    })
+    .filter((item): item is { subject: Subject; targetDate: Date } => item !== null && !isNaN(item.targetDate.getTime()));
 
   // Filter for future exams or exams happening today
   const upcoming = parsed

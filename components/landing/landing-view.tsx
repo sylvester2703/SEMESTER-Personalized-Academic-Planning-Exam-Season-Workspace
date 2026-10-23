@@ -135,7 +135,7 @@ export function LandingView() {
             {/* Live Ticking Countdown Digits */}
             <div className="grid grid-cols-4 gap-2.5 sm:gap-3 text-center">
               <div className="flex flex-col items-center bg-paper-100 dark:bg-paper-800 border border-paper-300 dark:border-paper-700 rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 min-w-[62px] sm:min-w-[74px]">
-                <span className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-ink-950 dark:text-white leading-none">
+                <span suppressHydrationWarning className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-ink-950 dark:text-white leading-none">
                   {String(displayDays).padStart(2, '0')}
                 </span>
                 <span className="text-[10px] uppercase font-semibold text-ink-500 dark:text-ink-400 mt-1">
@@ -144,7 +144,7 @@ export function LandingView() {
               </div>
 
               <div className="flex flex-col items-center bg-paper-100 dark:bg-paper-800 border border-paper-300 dark:border-paper-700 rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 min-w-[62px] sm:min-w-[74px]">
-                <span className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-ink-950 dark:text-white leading-none">
+                <span suppressHydrationWarning className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-ink-950 dark:text-white leading-none">
                   {String(displayHours).padStart(2, '0')}
                 </span>
                 <span className="text-[10px] uppercase font-semibold text-ink-500 dark:text-ink-400 mt-1">
@@ -153,7 +153,7 @@ export function LandingView() {
               </div>
 
               <div className="flex flex-col items-center bg-paper-100 dark:bg-paper-800 border border-paper-300 dark:border-paper-700 rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 min-w-[62px] sm:min-w-[74px]">
-                <span className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-ink-950 dark:text-white leading-none">
+                <span suppressHydrationWarning className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-ink-950 dark:text-white leading-none">
                   {String(displayMins).padStart(2, '0')}
                 </span>
                 <span className="text-[10px] uppercase font-semibold text-ink-500 dark:text-ink-400 mt-1">
@@ -162,7 +162,7 @@ export function LandingView() {
               </div>
 
               <div className="flex flex-col items-center bg-forest/15 dark:bg-emerald-950/70 border border-forest/30 dark:border-emerald-700/60 rounded-xl px-3.5 py-2.5 sm:px-4 sm:py-3 min-w-[62px] sm:min-w-[74px]">
-                <span className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-forest dark:text-emerald-400 leading-none">
+                <span suppressHydrationWarning className="tabular-nums font-serif text-2xl sm:text-4xl font-bold text-forest dark:text-emerald-400 leading-none">
                   {String(displaySecs).padStart(2, '0')}
                 </span>
                 <span className="text-[10px] uppercase font-bold text-forest dark:text-emerald-400 mt-1">

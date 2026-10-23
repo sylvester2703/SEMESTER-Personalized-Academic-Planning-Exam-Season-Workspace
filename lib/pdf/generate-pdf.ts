@@ -1,8 +1,20 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AppData, Subject, Topic, StudySession } from '@/types';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { formatTime12Hour, formatTimeRange } from '@/lib/dates';
+
+function applyAutoTable(doc: any, options: any) {
+  if (typeof autoTable === 'function') {
+    autoTable(doc, options);
+  } else if (typeof (autoTable as any)?.default === 'function') {
+    (autoTable as any).default(doc, options);
+  } else if (typeof (autoTable as any)?.autoTable === 'function') {
+    (autoTable as any).autoTable(doc, options);
+  } else if (typeof (doc as any)?.autoTable === 'function') {
+    (doc as any).autoTable(options);
+  }
+}
 
 export type PdfExportType = 'full' | 'timetable' | 'daily' | 'exams' | 'syllabus';
 
@@ -267,7 +279,7 @@ export async function generateStudyPlannerPdf(
             ['[Write Subject 2 Name]', 'DD/MM/YYYY\n09:00', '___ days', 'Main Exam Hall', 'MODERATE', '[  ] Not started'],
           ];
 
-      autoTable(doc, {
+      applyAutoTable(doc, {
         startY: 40,
         head: [['Subject & Code', 'Exam Date & Time', 'Days Left', 'Venue / Hall', 'Difficulty', 'Readiness']],
         body: examRows,
@@ -339,7 +351,7 @@ export async function generateStudyPlannerPdf(
             ['Thursday', '16:00 - 17:00 (60m)', 'Subject 2', '[Blank Study Slot - write task here]', '[  ] Open'],
           ];
 
-      autoTable(doc, {
+      applyAutoTable(doc, {
         startY: 40,
         head: [['Date', 'Time & Duration', 'Subject', 'Focus Topic / Planned Task', 'Status']],
         body: sessionRows,
@@ -411,7 +423,7 @@ export async function generateStudyPlannerPdf(
             ['[  ]', '[Subject 2]', 'Unit 2', '[Write topic title here]', 'Not Started', '45 mins'],
           ];
 
-      autoTable(doc, {
+      applyAutoTable(doc, {
         startY: 40,
         head: [['Done', 'Subject', 'Module / Unit', 'Topic Title', 'Status', 'Est. Time']],
         body: topicRows,
@@ -464,7 +476,7 @@ export async function generateStudyPlannerPdf(
       });
 
       if (checklistRows.length > 0) {
-        autoTable(doc, {
+        applyAutoTable(doc, {
           startY: 40,
           head: [['Status', 'Category', 'Subject', 'Checklist Item']],
           body: checklistRows,
@@ -546,7 +558,7 @@ export async function generateStudyPlannerPdf(
         ];
       });
 
-      autoTable(doc, {
+      applyAutoTable(doc, {
         startY: 38,
         head: [['Day & Date', 'Time Window', 'Duration', 'Subject', 'Topic / Focus Task', 'Tick']],
         body: sessionRows.length > 0 ? sessionRows : [['No sessions scheduled.', '', '', '', '', '']],
@@ -605,7 +617,7 @@ export async function generateStudyPlannerPdf(
         ];
       });
 
-      autoTable(doc, {
+      applyAutoTable(doc, {
         startY: 40,
         head: [['Time', 'Duration', 'Subject', 'Focus Topic & Notes', 'Status']],
         body: dayRows.length > 0 ? dayRows : [['No study sessions planned for this date.', '', '', '', '']],
@@ -680,7 +692,7 @@ export async function generateStudyPlannerPdf(
         ];
       });
 
-      autoTable(doc, {
+      applyAutoTable(doc, {
         startY: 38,
         head: [['Course Name', 'Code', 'Exam Date', 'Countdown', 'Venue', 'Revision Backlog']],
         body: rows,
@@ -744,7 +756,7 @@ export async function generateStudyPlannerPdf(
         ];
       });
 
-      autoTable(doc, {
+      applyAutoTable(doc, {
         startY: 38,
         head: [['Done', 'Subject', 'Unit / Chapter', 'Topic', 'Current State', 'Time']],
         body: rows.length > 0 ? rows : [['No syllabus topics entered.', '', '', '', '', '']],
@@ -780,7 +792,9 @@ export async function generateStudyPlannerPdf(
     const safeName = studentName.toLowerCase().replace(/[^a-z0-9]/g, '_');
     const filename = `SEMESTER_${options.type}_planner_${safeName}_${safeDate}.pdf`;
 
-    doc.save(filename);
+    if (typeof window !== 'undefined' && typeof doc.save === 'function') {
+      doc.save(filename);
+    }
     return true;
   } catch (err) {
     console.error('[SEMESTER PDF Generator] Generation failed:', err);

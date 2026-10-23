@@ -142,7 +142,7 @@ interface PlannerContextType {
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
 
 export function PlannerProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<AppData>(() => loadAppData());
+  const [data, setData] = useState<AppData>(() => createDefaultEmptyData());
   const [isLoaded, setIsLoaded] = useState(false);
   const [activeView, setActiveView] = useState<ActiveView>('landing');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -161,19 +161,34 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     // Apply theme
     applyThemeClass(loaded.profile.theme);
 
-    // Listen to Supabase Auth state
-    supabase.auth.getUser().then(({ data: authData }) => {
-      if (authData?.user) {
-        setCurrentUser(authData.user);
-      }
-    });
+    // Listen to Supabase Auth state safely with error shielding
+    let authListener: { subscription?: { unsubscribe: () => void } } | undefined;
+    try {
+      supabase.auth
+        .getUser()
+        .then(({ data: authData, error }) => {
+          if (!error && authData?.user) {
+            setCurrentUser(authData.user);
+          }
+        })
+        .catch((err) => {
+          console.warn('[SEMESTER Auth] Supabase session check skipped or offline:', err);
+        });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUser(session?.user || null);
-    });
+      const res = supabase.auth.onAuthStateChange((_event, session) => {
+        setCurrentUser(session?.user || null);
+      });
+      authListener = res?.data;
+    } catch (authInitErr) {
+      console.warn('[SEMESTER Auth] Auth listener initialization error:', authInitErr);
+    }
 
     return () => {
-      authListener?.subscription.unsubscribe();
+      try {
+        authListener?.subscription?.unsubscribe?.();
+      } catch (cleanupErr) {
+        console.warn('[SEMESTER Auth] Cleanup error:', cleanupErr);
+      }
     };
   }, []);
 
