@@ -55,6 +55,7 @@ export async function generateWithGemini(prompt: string, systemInstruction?: str
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(6000),
   });
 
   if (!response.ok) {

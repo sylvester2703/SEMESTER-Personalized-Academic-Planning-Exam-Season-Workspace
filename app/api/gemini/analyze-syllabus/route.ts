@@ -3,8 +3,16 @@ import { extractSyllabusUnits } from '@/lib/ai/gemini';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { text } = body;
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or missing JSON in request body' },
+        { status: 400 }
+      );
+    }
+    const { text } = body || {};
 
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return NextResponse.json(

@@ -3,8 +3,16 @@ import { generateWithGemini } from '@/lib/ai/gemini';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { subjects = [], topics = [], dailyHours = 4 } = body;
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or missing JSON in request body' },
+        { status: 400 }
+      );
+    }
+    const { subjects = [], topics = [], dailyHours = 4 } = body || {};
 
     if (!subjects.length && !topics.length) {
       return NextResponse.json({
