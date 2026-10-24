@@ -30,108 +30,169 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Create auto-confirmed user via Supabase Admin API
-    // This bypasses email verification rate limits (429) and allows instant student access
+    const cleanEmail = email.trim().toLowerCase();
     let userRecord: any = null;
-    let createdViaAdmin = false;
 
+    // 1. Try to create user via Supabase Admin API with auto-confirmed email
+    if (secretKey) {
+      try {
+        const adminRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+          method: 'POST',
+          headers: {
+            'apikey': secretKey,
+            'Authorization': `Bearer ${secretKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: cleanEmail,
+            password,
+            email_confirm: true,
+            user_metadata: {
+              full_name: fullName || 'Student',
+              phone: phone || '',
+              email_verified: true,
+            },
+          }),
+        });
+
+        const adminData = await adminRes.json();
+
+        if (adminRes.ok && adminData.id) {
+          userRecord = adminData;
+        } else if (
+          adminData.msg?.includes('already') ||
+          adminData.message?.includes('already') ||
+          adminData.error_code === 'email_exists'
+        ) {
+          // User already exists in Supabase. Find and update password so they can log in seamlessly
+          try {
+            const listRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+              headers: {
+                'apikey': secretKey,
+                'Authorization': `Bearer ${secretKey}`,
+              },
+            });
+            const listData = await listRes.json();
+            const existing = listData.users?.find(
+              (u: any) => u.email?.toLowerCase() === cleanEmail
+            );
+
+            if (existing?.id) {
+              await fetch(`${supabaseUrl}/auth/v1/admin/users/${existing.id}`, {
+                method: 'PUT',
+                headers: {
+                  'apikey': secretKey,
+                  'Authorization': `Bearer ${secretKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  password,
+                  email_confirm: true,
+                  user_metadata: {
+                    full_name: fullName || existing.user_metadata?.full_name || 'Student',
+                    phone: phone || existing.user_metadata?.phone || '',
+                  },
+                }),
+              });
+              userRecord = existing;
+            }
+          } catch (updateErr) {
+            console.warn('[Auth API] Existing user password update skipped:', updateErr);
+          }
+        }
+      } catch (adminErr) {
+        console.warn('[Auth API] Admin endpoint unavailable, falling back to public signup:', adminErr);
+      }
+    }
+
+    // 2. If admin creation was not available, try public signup
+    if (!userRecord) {
+      try {
+        const pubRes = await fetch(`${supabaseUrl}/auth/v1/signup`, {
+          method: 'POST',
+          headers: {
+            'apikey': publishableKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: cleanEmail,
+            password,
+            data: {
+              full_name: fullName || 'Student',
+              phone: phone || '',
+            },
+          }),
+        });
+
+        const pubData = await pubRes.json();
+        if (pubRes.ok) {
+          userRecord = pubData.user || pubData;
+        } else if (pubData.msg?.includes('already') || pubData.error_code === 'email_exists') {
+          return NextResponse.json({
+            success: false,
+            error: 'This email is already registered. Please click "Sign In" below to log into your account.',
+          }, { status: 400 });
+        } else {
+          return NextResponse.json({
+            success: false,
+            error: pubData.msg || pubData.message || 'Unable to register user.',
+          }, { status: pubRes.status });
+        }
+      } catch (pubErr: any) {
+        console.warn('[Auth API] Public signup fetch failed:', pubErr);
+      }
+    }
+
+    // 3. Obtain active JWT session token via password grant
     try {
-      const adminRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-        method: 'POST',
-        headers: {
-          'apikey': secretKey,
-          'Authorization': `Bearer ${secretKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
-          email_confirm: true,
-          user_metadata: {
-            full_name: fullName || 'Student',
-            phone: phone || '',
-            email_verified: true,
+      const tokenRes = await fetch(
+        `${supabaseUrl}/auth/v1/token?grant_type=password`,
+        {
+          method: 'POST',
+          headers: {
+            'apikey': publishableKey,
+            'Content-Type': 'application/json',
           },
-        }),
-      });
+          body: JSON.stringify({
+            email: cleanEmail,
+            password,
+          }),
+        }
+      );
 
-      const adminData = await adminRes.json();
+      const tokenData = await tokenRes.json();
 
-      if (adminRes.ok && adminData.id) {
-        userRecord = adminData;
-        createdViaAdmin = true;
-      } else if (adminData.msg?.includes('already') || adminData.message?.includes('already')) {
-        // User already registered, proceed to sign in
+      if (tokenRes.ok && tokenData.access_token) {
+        return NextResponse.json({
+          success: true,
+          user: tokenData.user,
+          session: {
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_in: tokenData.expires_in,
+            token_type: tokenData.token_type,
+            user: tokenData.user,
+          },
+        });
       }
-    } catch (adminErr) {
-      console.warn('[Auth API] Admin creation fallback to public signup:', adminErr);
+    } catch (tokenErr) {
+      console.warn('[Auth API] Token grant fetch failed:', tokenErr);
     }
 
-    // 2. If not created via admin, attempt public signup
-    if (!createdViaAdmin && !userRecord) {
-      const pubRes = await fetch(`${supabaseUrl}/auth/v1/signup`, {
-        method: 'POST',
-        headers: {
-          'apikey': publishableKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
-          data: {
-            full_name: fullName || 'Student',
-            phone: phone || '',
-          },
-        }),
-      });
-
-      const pubData = await pubRes.json();
-      if (!pubRes.ok && !pubData.msg?.includes('already')) {
-        const errorMsg = pubData.msg || pubData.message || 'Unable to register user';
-        return NextResponse.json({ success: false, error: errorMsg }, { status: pubRes.status });
-      }
-      userRecord = pubData.user || pubData;
-    }
-
-    // 3. Authenticate and obtain active JWT session token
-    const tokenRes = await fetch(
-      `${supabaseUrl}/auth/v1/token?grant_type=password`,
-      {
-        method: 'POST',
-        headers: {
-          'apikey': publishableKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
-        }),
-      }
-    );
-
-    const tokenData = await tokenRes.json();
-
-    if (tokenRes.ok && tokenData.access_token) {
+    // If session could not be created via Supabase, return success with user record
+    if (userRecord) {
       return NextResponse.json({
         success: true,
-        user: tokenData.user,
-        session: {
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token,
-          expires_in: tokenData.expires_in,
-          token_type: tokenData.token_type,
-          user: tokenData.user,
-        },
+        user: userRecord,
+        session: null,
+        message: 'Account created. You can now sign in with your password.',
       });
     }
 
-    // If password grant failed due to unconfirmed email, return user info so client knows
     return NextResponse.json({
-      success: true,
-      user: userRecord,
-      session: null,
-      message: 'Account registered. Please log in or verify email if required.',
-    });
+      success: false,
+      error: 'Unable to connect to Supabase auth service. Please check your credentials or network connection.',
+    }, { status: 500 });
   } catch (err: any) {
     console.error('[API Auth Signup Error]:', err);
     return NextResponse.json(

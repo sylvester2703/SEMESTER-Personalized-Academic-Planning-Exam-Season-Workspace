@@ -175,9 +175,33 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
         </p>
 
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 text-xs flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span>{errorMsg}</span>
+          <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 text-xs flex flex-col gap-1.5">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+            {mode === 'signup' && (
+              <button
+                type="button"
+                onClick={() => {
+                  updateProfile({
+                    displayName: fullName.trim() || email.split('@')[0],
+                    email: email.trim(),
+                    phone: phone.trim() || undefined,
+                  });
+                  addToast({
+                    type: 'info',
+                    title: 'Offline Storage Active',
+                    description: 'Logged in as guest. All your study sessions and exam dates are saved locally.',
+                  });
+                  setActiveView('dashboard');
+                  onClose();
+                }}
+                className="self-start text-[11px] font-semibold text-forest dark:text-emerald-400 hover:underline mt-1 cursor-pointer"
+              >
+                Or continue into Planner using Browser Storage &rarr;
+              </button>
+            )}
           </div>
         )}
 
