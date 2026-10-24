@@ -1,4 +1,5 @@
 import { SyllabusUnit, Topic, TopicStatus } from '@/types';
+import { generateUuid } from '@/lib/utils/uuid';
 
 export interface ParsedSyllabusResult {
   units: SyllabusUnit[];
@@ -59,7 +60,7 @@ export function parseSyllabusText(text: string, subjectId: string): ParsedSyllab
 
       unitOrder++;
       currentUnit = {
-        id: `unit-${subjectId}-${unitOrder}-${Date.now()}`,
+        id: generateUuid(),
         subjectId,
         unitNumber: `Unit ${unitNum}`,
         title: unitTitle,
@@ -148,7 +149,7 @@ export function parseSyllabusText(text: string, subjectId: string): ParsedSyllab
   // Fallback: If no units were detected at all, but topics exist, create one comprehensive default unit
   if (units.length === 0 && topics.length > 0) {
     const defaultUnit: SyllabusUnit = {
-      id: `unit-${subjectId}-default-${Date.now()}`,
+      id: generateUuid(),
       subjectId,
       unitNumber: 'Course Syllabus',
       title: 'General Curriculum & Topics',

@@ -7,6 +7,7 @@ import {
 } from '@/types';
 import { addDays, format, parseISO, differenceInDays } from 'date-fns';
 import { formatTimeRange } from '@/lib/dates';
+import { generateUuid } from '@/lib/utils/uuid';
 
 /**
  * Checks if two time intervals overlap on the same day.
@@ -318,7 +319,7 @@ export function generateSuggestedWeeklyPlan(
         const endStr = minutesToTimeString(cursor + preferredDuration);
 
         suggested.push({
-          id: `plan-gen-${dateStr}-${cursor}-${Math.random().toString(36).substring(2, 6)}`,
+          id: generateUuid(),
           subjectId: subj.id,
           title: sessionTitle,
           date: dateStr,

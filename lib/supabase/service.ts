@@ -1,5 +1,15 @@
 import { createClient } from '@/utils/supabase/client';
-import { AppData, Subject, Topic, StudySession, RoutineCommitment, FocusRecord, UserProfile } from '@/types';
+import {
+  AppData,
+  Subject,
+  Topic,
+  StudySession,
+  RoutineCommitment,
+  FocusRecord,
+  UserProfile,
+  SyllabusUnit,
+} from '@/types';
+import { toUuid } from '@/lib/utils/uuid';
 
 export const supabase = createClient();
 
@@ -156,7 +166,31 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
       throw subjErr;
     }
 
-    // 3. Fetch topics
+    // 3. Fetch syllabus units
+    const { data: unitRows, error: unitErr } = await supabase
+      .from('syllabus_units')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (unitErr && unitErr.code !== 'PGRST205') throw unitErr;
+
+    // Group units by subject_id
+    const unitsBySubject = new Map<string, SyllabusUnit[]>();
+    (unitRows || []).forEach((u: any) => {
+      const item: SyllabusUnit = {
+        id: u.id,
+        subjectId: u.subject_id,
+        unitNumber: u.unit_number ? `Unit ${u.unit_number}` : 'Unit 1',
+        title: u.title,
+        order: u.unit_number || 1,
+        notes: u.description || undefined,
+      };
+      const list = unitsBySubject.get(u.subject_id) || [];
+      list.push(item);
+      unitsBySubject.set(u.subject_id, list);
+    });
+
+    // 4. Fetch topics
     const { data: topicRows, error: topErr } = await supabase
       .from('topics')
       .select('*')
@@ -164,7 +198,7 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
 
     if (topErr && topErr.code !== 'PGRST205') throw topErr;
 
-    // 4. Fetch study sessions
+    // 5. Fetch study sessions (study plan)
     const { data: sessionRows, error: sessErr } = await supabase
       .from('study_sessions')
       .select('*')
@@ -172,7 +206,7 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
 
     if (sessErr && sessErr.code !== 'PGRST205') throw sessErr;
 
-    // 5. Fetch routine commitments
+    // 6. Fetch routine commitments
     const { data: routineRows, error: routErr } = await supabase
       .from('routine_commitments')
       .select('*')
@@ -180,7 +214,7 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
 
     if (routErr && routErr.code !== 'PGRST205') throw routErr;
 
-    // 6. Fetch focus records
+    // 7. Fetch focus records
     const { data: focusRows } = await supabase
       .from('focus_records')
       .select('*')
@@ -199,6 +233,7 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
       confidence: s.confidence,
       color: s.color || '#2D5541',
       notes: s.notes || undefined,
+      units: unitsBySubject.get(s.id) || [],
       createdAt: s.created_at,
     }));
 
@@ -208,9 +243,9 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
       unitId: t.unit_id || undefined,
       title: t.title,
       status: t.status,
-      estimatedDurationMinutes: t.estimated_duration_minutes || 45,
+      estimatedMinutes: t.estimated_duration_minutes || 45,
       actualDurationMinutes: t.actual_duration_minutes || 0,
-      difficulty: t.difficulty || 'moderate',
+      difficultyRating: t.difficulty === 'difficult' ? 'difficult' : t.difficulty === 'easy' ? 'easy' : 'okay',
       confidence: t.confidence || 'medium',
       notes: t.notes || '',
       lastStudiedAt: t.last_studied_at || undefined,
@@ -224,8 +259,8 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
       date: sess.session_date,
       startTime: sess.start_time,
       endTime: sess.end_time,
-      durationMinutes: sess.duration_minutes,
-      completed: sess.completed,
+      durationMinutes: sess.duration_minutes || 45,
+      completed: Boolean(sess.completed),
       completedAt: sess.completed_at || undefined,
       notes: sess.notes || undefined,
     }));
@@ -296,7 +331,9 @@ export async function fetchUserWorkspaceFromSupabase(): Promise<{ success: boole
 }
 
 /**
- * Synchronize local AppData workspace into Supabase for the authenticated user
+ * Synchronize local AppData workspace into Supabase for the authenticated user.
+ * Ensures all subjects, syllabus units, topics, study sessions, and commitments
+ * are persisted securely in Supabase PostgreSQL tables with valid UUIDs.
  */
 export async function syncWorkspaceToSupabase(data: AppData): Promise<{ success: boolean; error?: string }> {
   try {
@@ -335,29 +372,149 @@ export async function syncWorkspaceToSupabase(data: AppData): Promise<{ success:
     }
 
     // 2. Synchronize Subjects
+    const validSubjectUuids = new Set<string>();
     if (data.subjects.length > 0) {
-      const subjectPayload = data.subjects.map((s) => ({
-        id: s.id.includes('-') && s.id.length === 36 ? s.id : undefined,
-        user_id: user.id,
-        name: s.name,
-        code: s.code || '',
-        exam_date: s.examDate,
-        exam_time: s.examTime || '09:00',
-        difficulty: s.difficulty,
-        prep_level: s.prepLevel,
-        priority: s.priority,
-        confidence: s.confidence,
-        color: s.color,
-        notes: s.notes || null,
-      }));
+      const subjectPayload = data.subjects.map((s) => {
+        const subjectUuid = toUuid(s.id);
+        validSubjectUuids.add(subjectUuid);
+        return {
+          id: subjectUuid,
+          user_id: user.id,
+          name: s.name,
+          code: s.code || '',
+          exam_date: s.examDate,
+          exam_time: s.examTime || '09:00',
+          difficulty: s.difficulty || 'moderate',
+          prep_level: s.prepLevel || 'in_progress',
+          priority: s.priority || 'medium',
+          confidence: s.confidence || 'medium',
+          color: s.color || '#2D5541',
+          notes: s.notes || null,
+        };
+      });
 
-      await supabase.from('subjects').upsert(subjectPayload, { onConflict: 'id' });
+      const { error: subjErr } = await supabase
+        .from('subjects')
+        .upsert(subjectPayload, { onConflict: 'id' });
+      if (subjErr && subjErr.code !== 'PGRST205') throw subjErr;
     }
 
-    // 3. Synchronize Routine Commitments
+    // 3. Synchronize Syllabus Units
+    const validUnitUuids = new Set<string>();
+    const unitPayload: any[] = [];
+    data.subjects.forEach((s) => {
+      const subjectUuid = toUuid(s.id);
+      if (s.units && Array.isArray(s.units)) {
+        s.units.forEach((u, idx) => {
+          const unitUuid = toUuid(u.id);
+          validUnitUuids.add(unitUuid);
+          unitPayload.push({
+            id: unitUuid,
+            user_id: user.id,
+            subject_id: subjectUuid,
+            unit_number: typeof u.order === 'number' ? u.order : idx + 1,
+            title: u.title,
+            description: u.notes || null,
+            estimated_hours: 4.0,
+          });
+        });
+      }
+    });
+
+    if (unitPayload.length > 0) {
+      const { error: unitErr } = await supabase
+        .from('syllabus_units')
+        .upsert(unitPayload, { onConflict: 'id' });
+      if (unitErr && unitErr.code !== 'PGRST205') throw unitErr;
+    }
+
+    // 4. Synchronize Topics
+    const validTopicUuids = new Set<string>();
+    if (data.topics.length > 0) {
+      const topicPayload = data.topics
+        .filter((t) => validSubjectUuids.has(toUuid(t.subjectId)))
+        .map((t) => {
+          const topicUuid = toUuid(t.id);
+          validTopicUuids.add(topicUuid);
+          const rawUnitUuid = t.unitId ? toUuid(t.unitId) : null;
+          const safeUnitUuid = rawUnitUuid && validUnitUuids.has(rawUnitUuid) ? rawUnitUuid : null;
+
+          return {
+            id: topicUuid,
+            user_id: user.id,
+            subject_id: toUuid(t.subjectId),
+            unit_id: safeUnitUuid,
+            title: t.title,
+            status: t.status || 'not_started',
+            estimated_duration_minutes: t.estimatedMinutes || 45,
+            actual_duration_minutes: 0,
+            difficulty: t.difficultyRating === 'okay' ? 'moderate' : (t.difficultyRating || 'moderate'),
+            confidence: 'medium',
+            notes: t.notes || '',
+            last_studied_at: t.lastStudiedAt || null,
+          };
+        });
+
+      if (topicPayload.length > 0) {
+        const { error: topErr } = await supabase
+          .from('topics')
+          .upsert(topicPayload, { onConflict: 'id' });
+        if (topErr && topErr.code !== 'PGRST205') throw topErr;
+      }
+    }
+
+    // 5. Synchronize Study Sessions (Study Plan)
+    if (data.sessions.length > 0) {
+      const activeSessionUuids: string[] = [];
+      const sessionPayload = data.sessions
+        .filter((sess) => validSubjectUuids.has(toUuid(sess.subjectId)))
+        .map((sess) => {
+          const sessionUuid = toUuid(sess.id);
+          activeSessionUuids.push(sessionUuid);
+          const rawTopicUuid = sess.topicId ? toUuid(sess.topicId) : null;
+          const safeTopicUuid = rawTopicUuid && validTopicUuids.has(rawTopicUuid) ? rawTopicUuid : null;
+
+          return {
+            id: sessionUuid,
+            user_id: user.id,
+            subject_id: toUuid(sess.subjectId),
+            topic_id: safeTopicUuid,
+            title: sess.title,
+            session_date: sess.date,
+            start_time: sess.startTime,
+            end_time: sess.endTime,
+            duration_minutes: sess.durationMinutes || 45,
+            completed: Boolean(sess.completed),
+            completed_at: sess.completedAt || null,
+            notes: sess.notes || null,
+          };
+        });
+
+      if (sessionPayload.length > 0) {
+        const { error: sessErr } = await supabase
+          .from('study_sessions')
+          .upsert(sessionPayload, { onConflict: 'id' });
+        if (sessErr && sessErr.code !== 'PGRST205') throw sessErr;
+
+        // Clean up any deleted/replaced sessions for this user
+        if (activeSessionUuids.length > 0) {
+          try {
+            await supabase
+              .from('study_sessions')
+              .delete()
+              .eq('user_id', user.id)
+              .not('id', 'in', `(${activeSessionUuids.join(',')})`);
+          } catch (cleanErr) {
+            console.warn('[Supabase Sync] Session cleanup notice:', cleanErr);
+          }
+        }
+      }
+    }
+
+    // 6. Synchronize Routine Commitments
     if (data.profile.routineCommitments.length > 0) {
       const routinePayload = data.profile.routineCommitments.map((r) => ({
-        id: r.id.includes('-') && r.id.length === 36 ? r.id : undefined,
+        id: toUuid(r.id),
         user_id: user.id,
         name: r.name,
         category: r.category,
@@ -368,7 +525,10 @@ export async function syncWorkspaceToSupabase(data: AppData): Promise<{ success:
         notes: r.notes || null,
       }));
 
-      await supabase.from('routine_commitments').upsert(routinePayload, { onConflict: 'id' });
+      const { error: routErr } = await supabase
+        .from('routine_commitments')
+        .upsert(routinePayload, { onConflict: 'id' });
+      if (routErr && routErr.code !== 'PGRST205') throw routErr;
     }
 
     return { success: true };
@@ -377,3 +537,4 @@ export async function syncWorkspaceToSupabase(data: AppData): Promise<{ success:
     return { success: false, error: err.message || 'Sync operation failed' };
   }
 }
+

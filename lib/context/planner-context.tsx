@@ -32,6 +32,7 @@ import {
   fetchUserWorkspaceFromSupabase,
   signOutUser,
 } from '@/lib/supabase/service';
+import { generateUuid, toUuid } from '@/lib/utils/uuid';
 
 export type ActiveView =
   | 'landing'
@@ -208,7 +209,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     try {
       supabase.auth
         .getUser()
-        .then(({ data: authData, error }) => {
+        .then(async ({ data: authData, error }) => {
           if (!error && authData?.user) {
             setCurrentUser(authData.user);
             const metaName = authData.user.user_metadata?.full_name || authData.user.user_metadata?.display_name || authData.user.user_metadata?.name;
@@ -221,13 +222,29 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
                 };
               });
             }
+            // Auto restore or backup to cloud on initial session recovery
+            try {
+              const res = await fetchUserWorkspaceFromSupabase();
+              if (res.success && res.data) {
+                if (res.data.subjects.length > 0) {
+                  setData(res.data);
+                  saveAppData(res.data);
+                  setSyncStatus('synced');
+                } else if (loaded.subjects.length > 0) {
+                  await syncWorkspaceToSupabase(loaded);
+                  setSyncStatus('synced');
+                }
+              }
+            } catch (syncErr) {
+              console.warn('[SEMESTER Sync] Initial session sync notice:', syncErr);
+            }
           }
         })
         .catch((err) => {
           console.warn('[SEMESTER Auth] Supabase session check skipped or offline:', err);
         });
 
-      const res = supabase.auth.onAuthStateChange((_event, session) => {
+      const res = supabase.auth.onAuthStateChange(async (event, session) => {
         const u = session?.user || null;
         setCurrentUser(u);
         if (u) {
@@ -240,6 +257,29 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
                 profile: { ...prev.profile, displayName: metaName },
               };
             });
+          }
+          if (event === 'SIGNED_IN') {
+            try {
+              const cloudRes = await fetchUserWorkspaceFromSupabase();
+              if (cloudRes.success && cloudRes.data) {
+                if (cloudRes.data.subjects.length > 0) {
+                  setData(cloudRes.data);
+                  saveAppData(cloudRes.data);
+                  setSyncStatus('synced');
+                } else {
+                  setData((currentLocal) => {
+                    if (currentLocal.subjects.length > 0) {
+                      syncWorkspaceToSupabase(currentLocal).then((r) => {
+                        if (r.success) setSyncStatus('synced');
+                      });
+                    }
+                    return currentLocal;
+                  });
+                }
+              }
+            } catch (err) {
+              console.warn('[SEMESTER Auth] Cloud sync on signin notice:', err);
+            }
           }
         }
       });
@@ -263,6 +303,25 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       saveAppData(data);
     }
   }, [data, isLoaded]);
+
+  // Debounced auto-sync to Supabase Cloud when user is logged in
+  useEffect(() => {
+    if (!isLoaded || !currentUser) return;
+    if (data.subjects.length === 0 && !data.profile.displayName) return;
+
+    setSyncStatus('syncing');
+    const timer = setTimeout(async () => {
+      try {
+        const res = await syncWorkspaceToSupabase(data);
+        setSyncStatus(res.success ? 'synced' : 'idle');
+      } catch (syncErr) {
+        console.warn('[SEMESTER AutoSync] Background sync notice:', syncErr);
+        setSyncStatus('idle');
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [data, isLoaded, currentUser]);
 
   const applyThemeClass = (theme: 'light' | 'dark' | 'system') => {
     const root = document.documentElement;
@@ -309,7 +368,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const addSubject = (subjInput: Omit<Subject, 'id' | 'createdAt'>): Subject => {
     const newSubj: Subject = {
       ...subjInput,
-      id: `subj-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUuid(),
       createdAt: new Date().toISOString(),
     };
     setData((prev) => ({
@@ -359,17 +418,25 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     source?: 'manual' | 'pasted' | 'uploaded' | 'sample',
     replaceExisting = false
   ) => {
-    const mappedTopics: Topic[] = newTopics.map((t, idx) => ({
+    const cleanUnits: SyllabusUnit[] = units.map((u) => ({
+      ...u,
+      id: toUuid(u.id),
+      subjectId: toUuid(subjectId),
+    }));
+
+    const mappedTopics: Topic[] = newTopics.map((t) => ({
       ...t,
-      id: `top-${subjectId}-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateUuid(),
+      subjectId: toUuid(subjectId),
+      unitId: t.unitId ? toUuid(t.unitId) : undefined,
     }));
 
     setData((prev) => {
       const updatedSubjects = prev.subjects.map((s) => {
-        if (s.id === subjectId) {
+        if (s.id === subjectId || toUuid(s.id) === toUuid(subjectId)) {
           return {
             ...s,
-            units,
+            units: cleanUnits,
             originalSyllabusText: originalText || s.originalSyllabusText,
             syllabusSource: source || s.syllabusSource || 'manual',
           };
@@ -411,7 +478,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const addUnit = (subjectId: string, unitInput: Omit<SyllabusUnit, 'id' | 'subjectId'>): SyllabusUnit => {
     const newUnit: SyllabusUnit = {
       ...unitInput,
-      id: `unit-${subjectId}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateUuid(),
       subjectId,
     };
 
@@ -517,7 +584,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const addTopic = (topicInput: Omit<Topic, 'id'>): Topic => {
     const newTopic: Topic = {
       ...topicInput,
-      id: `top-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUuid(),
     };
     setData((prev) => ({
       ...prev,
@@ -583,7 +650,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const addSession = (sessionInput: Omit<StudySession, 'id'>): StudySession => {
     const newSession: StudySession = {
       ...sessionInput,
-      id: `sess-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUuid(),
     };
     setData((prev) => ({
       ...prev,
@@ -650,7 +717,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const recordFocusSession = (recordInput: Omit<FocusRecord, 'id' | 'completedAt'>) => {
     const record: FocusRecord = {
       ...recordInput,
-      id: `foc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUuid(),
       completedAt: new Date().toISOString(),
     };
 
@@ -682,7 +749,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const addRoutineCommitment = (commitmentInput: Omit<RoutineCommitment, 'id'>) => {
     const newCommitment: RoutineCommitment = {
       ...commitmentInput,
-      id: `comm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUuid(),
     };
     setData((prev) => ({
       ...prev,
@@ -728,7 +795,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const addGoal = (goalInput: Omit<PersonalGoal, 'id'>) => {
     const newGoal: PersonalGoal = {
       ...goalInput,
-      id: `goal-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUuid(),
     };
     setData((prev) => ({
       ...prev,
@@ -793,7 +860,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   const addChecklistItem = (itemInput: Omit<ExamDayChecklistItem, 'id'>) => {
     const newItem: ExamDayChecklistItem = {
       ...itemInput,
-      id: `chk-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUuid(),
     };
     setData((prev) => ({
       ...prev,
@@ -874,7 +941,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
       .padStart(2, '0')}:${(newEndMin % 60).toString().padStart(2, '0')}`;
 
     const part2Session: StudySession = {
-      id: `sess-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: generateUuid(),
       subjectId: target.subjectId,
       title: `${target.title} (Part 2)`,
       date: date2,
@@ -1143,7 +1210,7 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
             addToast({
               type: 'success',
               title: 'Workspace backed up',
-              description: 'Your subjects, timetable, and syllabus are securely synced to Supabase.',
+              description: 'Your subjects, study plan, timetable, and syllabus are securely saved to your account.',
             });
             return true;
           } else {
@@ -1168,14 +1235,32 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
           setSyncStatus('syncing');
           const res = await fetchUserWorkspaceFromSupabase();
           if (res.success && res.data) {
-            setData(res.data);
-            saveAppData(res.data);
+            // Safety guard: if cloud has 0 subjects, but local has subjects,
+            // never overwrite local with empty data! Instead save local plan to cloud!
+            if (res.data.subjects.length === 0 && data.subjects.length > 0) {
+              const saveRes = await syncWorkspaceToSupabase(data);
+              setSyncStatus(saveRes.success ? 'synced' : 'idle');
+              addToast({
+                type: 'success',
+                title: 'Plan Saved to Cloud',
+                description: `Your ${data.subjects.length} subjects and study schedule have been saved to your account.`,
+              });
+              return true;
+            }
+
+            if (res.data.subjects.length > 0) {
+              setData(res.data);
+              saveAppData(res.data);
+              setSyncStatus('synced');
+              addToast({
+                type: 'success',
+                title: 'Restored from cloud',
+                description: `Loaded ${res.data.subjects.length} subjects and your study schedule.`,
+              });
+              return true;
+            }
+
             setSyncStatus('synced');
-            addToast({
-              type: 'success',
-              title: 'Restored from cloud',
-              description: `Loaded ${res.data.subjects.length} subjects from your Supabase account.`,
-            });
             return true;
           } else {
             setSyncStatus('idle');
