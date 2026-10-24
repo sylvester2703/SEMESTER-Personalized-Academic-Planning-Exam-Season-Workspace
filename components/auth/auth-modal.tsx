@@ -15,6 +15,7 @@ import {
   Phone,
   BellRing,
 } from 'lucide-react';
+import { PrivacyPolicyContent } from '@/components/legal/privacy-policy-content';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -33,6 +34,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
   const [fullName, setFullName] = useState('');
   const [enableUpdates, setEnableUpdates] = useState(true);
   const [updateInterval, setUpdateInterval] = useState<'1' | '2'>('2');
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -52,6 +55,9 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
         }
         if (password.length < 6) {
           throw new Error('Password must be at least 6 characters long.');
+        }
+        if (!acceptedPrivacy) {
+          throw new Error('Please review and check the box to agree to the Privacy Policy & Data Terms before creating an account.');
         }
 
         const { data, error } = await signUpWithEmail(email, password, fullName, phone);
@@ -337,10 +343,35 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
             </div>
           )}
 
+          {mode === 'signup' && (
+            <div className="pt-1.5 pb-0.5">
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  required
+                  checked={acceptedPrivacy}
+                  onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-paper-300 dark:border-paper-700 text-forest focus:ring-forest cursor-pointer"
+                />
+                <span className="text-[11px] text-ink-700 dark:text-ink-300 leading-snug">
+                  I have read and agree to the{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowPrivacyModal(true)}
+                    className="font-semibold text-forest dark:text-emerald-400 underline hover:text-forest-hover inline"
+                  >
+                    Privacy Policy & Data Terms
+                  </button>
+                  . I understand my academic data is securely saved in my account.
+                </span>
+              </label>
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-60"
+            disabled={isLoading || (mode === 'signup' && !acceptedPrivacy)}
+            className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-60 cursor-pointer"
           >
             {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             <span>
@@ -385,6 +416,44 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
           )}
         </div>
       </div>
+
+      {/* Privacy Policy Disclosure Modal */}
+      {showPrivacyModal && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-ink-950/70 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-xl max-w-lg w-full p-6 shadow-elevated relative max-h-[85vh] overflow-y-auto animate-in zoom-in-95">
+            <button
+              type="button"
+              onClick={() => setShowPrivacyModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded text-ink-400 hover:text-ink-800 dark:hover:text-white"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="font-serif text-xl font-bold text-ink-950 dark:text-white mb-3">
+              Privacy Policy & Data Terms
+            </h3>
+            <PrivacyPolicyContent />
+
+            <div className="mt-5 pt-4 border-t border-paper-200 dark:border-paper-800 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setAcceptedPrivacy(true);
+                  setShowPrivacyModal(false);
+                }}
+                className="px-4 py-2 rounded-lg bg-forest hover:bg-forest-hover text-white text-xs font-semibold cursor-pointer"
+              >
+                I Understand & Agree
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

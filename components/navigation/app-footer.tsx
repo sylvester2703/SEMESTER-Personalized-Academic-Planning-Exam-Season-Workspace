@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
 import { Shield, Sparkles, BookOpen, HardDrive, FileDown, Heart } from 'lucide-react';
+import { PrivacyPolicyContent } from '@/components/legal/privacy-policy-content';
 
 interface AppFooterProps {
   onOpenPdfExport?: () => void;
@@ -36,10 +37,6 @@ export function AppFooter({ onOpenPdfExport, onOpenWhatToStudy }: AppFooterProps
               <p className="text-xs text-ink-500 dark:text-ink-400 leading-relaxed">
                 Make a plan. Find your focus. Walk in prepared. Every semester deserves a better plan.
               </p>
-              <div className="flex items-center gap-1.5 text-[11px] text-forest dark:text-emerald-400 font-medium">
-                <HardDrive className="w-3.5 h-3.5" />
-                <span>100% Local-First & Private</span>
-              </div>
             </div>
 
             {/* Col 2: Navigation */}
@@ -237,18 +234,10 @@ export function AppFooter({ onOpenPdfExport, onOpenWhatToStudy }: AppFooterProps
               </div>
             ) : (
               <div>
-                <h3 className="font-serif text-xl font-bold text-ink-950 dark:text-white mb-2">
-                  Privacy & Local Storage Transparency
+                <h3 className="font-serif text-xl font-bold text-ink-950 dark:text-white mb-3">
+                  Privacy & Data Policy
                 </h3>
-                <p className="text-xs text-ink-600 dark:text-ink-300 leading-relaxed mb-3">
-                  SEMESTER requires <strong>no account creation</strong>, no login, and no backend database. All your data—including course names, exam dates, syllabus topics, routine commitments, and study history—is stored solely in your current browser’s <code className="bg-paper-200 dark:bg-paper-800 px-1 py-0.5 rounded">localStorage</code>.
-                </p>
-                <p className="text-xs text-ink-600 dark:text-ink-300 leading-relaxed mb-3">
-                  Data is not automatically synchronized across devices. To transfer your data between devices or create a backup, use the <strong>Export JSON</strong> feature in Settings or download a print-ready PDF planner.
-                </p>
-                <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-800 dark:text-emerald-300">
-                  Zero analytics tracking, zero third-party ads, zero cookies. Your study data belongs to you.
-                </div>
+                <PrivacyPolicyContent />
               </div>
             )}
           </div>

@@ -143,17 +143,6 @@ export function LandingView() {
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
-
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-[11px] text-ink-500 dark:text-ink-400">
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />
-            <span className="font-semibold">100% Free for students</span>
-          </span>
-          <span>•</span>
-          <span>Runs in browser with Supabase cloud backup</span>
-          <span>•</span>
-          <span>Automated Email & WhatsApp schedule updates</span>
-        </div>
       </section>
 
       {/* 2. LIVE COUNTDOWN TO NEXT EXAM (Only shown when an exam is scheduled) */}
@@ -359,10 +348,10 @@ export function LandingView() {
             Free & Open Tool
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl font-semibold mt-2 mb-4">
-            Your plan, your pace. 100% Free for students.
+            Your plan, your pace. Built for students.
           </h2>
           <p className="text-xs sm:text-sm text-emerald-100 max-w-xl mx-auto leading-relaxed mb-6">
-            SEMESTER runs entirely in your web browser. No subscriptions, no gated premium tiers, no personal data harvesting, and no account barriers.
+            SEMESTER is built with academic empathy. No subscriptions, no gated premium tiers, and zero personal data harvesting.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             {currentUser ? (

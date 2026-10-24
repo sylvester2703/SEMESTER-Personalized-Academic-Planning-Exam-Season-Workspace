@@ -27,6 +27,7 @@ import {
 import { TimeInput12H } from '@/components/shared/time-input-12h';
 import { formatTimeRange } from '@/lib/dates';
 import { RoutineCommitment, RoutineCategory } from '@/types';
+import { PrivacyPolicyContent } from '@/components/legal/privacy-policy-content';
 
 export function SettingsView() {
   const {
@@ -60,6 +61,7 @@ export function SettingsView() {
   );
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [resetType, setResetType] = useState<'sample' | 'empty'>('sample');
+  const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
 
   // Synchronize userNameInput when userName updates in context
   useEffect(() => {
@@ -228,17 +230,26 @@ export function SettingsView() {
         </p>
       </div>
 
-      {/* Privacy & Cloud Sync Section */}
-      <div className="bg-paper-50 dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-5 shadow-subtle flex items-start gap-3.5">
-        <ShieldCheck className="w-5 h-5 text-forest dark:text-emerald-400 mt-0.5 shrink-0" />
-        <div className="text-xs space-y-1">
-          <h4 className="font-semibold text-ink-900 dark:text-ink-100">
-            Local-First Privacy & Zero Tracking
-          </h4>
-          <p className="text-ink-600 dark:text-ink-400 leading-relaxed">
-            All your subjects, exam dates, timetable sessions, and syllabus notes are stored in your browser’s local storage on this device by default. You can optionally connect your Supabase account to sync your schedule across devices.
-          </p>
+      {/* Privacy & Security Policy Section */}
+      <div className="bg-paper-50 dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-5 shadow-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <ShieldCheck className="w-5 h-5 text-forest dark:text-emerald-400 mt-0.5 shrink-0" />
+          <div className="text-xs space-y-1">
+            <h4 className="font-semibold text-ink-900 dark:text-ink-100">
+              Privacy & Data Protection Policy
+            </h4>
+            <p className="text-ink-600 dark:text-ink-400 leading-relaxed max-w-2xl">
+              Your study plan is securely saved to your personal account with encrypted cloud persistence in Supabase, and cached locally for offline resilience. Zero tracking, zero third-party ads.
+            </p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={() => setShowPrivacyPolicy(true)}
+          className="text-xs font-semibold text-forest dark:text-emerald-400 hover:underline shrink-0 cursor-pointer"
+        >
+          View Privacy Policy
+        </button>
       </div>
 
       {/* Account Identity & User Name Setting Card */}
@@ -861,6 +872,40 @@ export function SettingsView() {
                 }`}
               >
                 {resetType === 'sample' ? 'Restore Sample Data' : 'Yes, Wipe Everything'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Policy Modal */}
+      {showPrivacyPolicy && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-950/60 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-xl max-w-lg w-full p-6 shadow-elevated relative max-h-[85vh] overflow-y-auto animate-in zoom-in-95">
+            <button
+              onClick={() => setShowPrivacyPolicy(false)}
+              className="absolute top-4 right-4 p-1.5 rounded text-ink-400 hover:text-ink-800 dark:hover:text-white cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="font-serif text-xl font-bold text-ink-950 dark:text-white mb-3">
+              Privacy & Data Policy
+            </h3>
+            <PrivacyPolicyContent />
+
+            <div className="mt-5 pt-4 border-t border-paper-200 dark:border-paper-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowPrivacyPolicy(false)}
+                className="px-4 py-2 rounded-lg bg-forest hover:bg-forest-hover text-white text-xs font-semibold cursor-pointer"
+              >
+                Close
               </button>
             </div>
           </div>
