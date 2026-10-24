@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateWithGemini } from '@/lib/ai/gemini';
+import { generateWithGemini, getDailyQuotaStatus, DAILY_AI_LIMIT, DAILY_AI_BUFFER } from '@/lib/ai/gemini';
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
             suggestedMinutes: 30,
           },
         ],
+        isAi: false,
+        quota: getDailyQuotaStatus(),
       });
     }
 
@@ -61,9 +63,19 @@ Format:
       const raw = await generateWithGemini(prompt, systemPrompt);
       const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
       const recommendations = JSON.parse(cleaned);
-      return NextResponse.json({ success: true, recommendations });
+      return NextResponse.json({
+        success: true,
+        recommendations,
+        isAi: true,
+        quota: getDailyQuotaStatus(),
+      });
     } catch (aiErr: any) {
       console.warn('[Recommend Route] AI generation failed, using rule-based fallback:', aiErr.message);
+
+      let quotaWarning: string | undefined;
+      if (aiErr.message?.includes('Daily AI limit reached') || aiErr.message?.includes('quota')) {
+        quotaWarning = `Daily AI limit reached: ${DAILY_AI_LIMIT} requests per day limit reached (keeping ${DAILY_AI_BUFFER} requests buffer beforehand). Using intelligent rule-based study priorities.`;
+      }
 
       // Rule-based fallback: prioritize unconfident/learning topics from nearest exam
       const sortedSubjects = [...subjects].sort((a: any, b: any) => {
@@ -98,12 +110,18 @@ Format:
         });
       }
 
-      return NextResponse.json({ success: true, recommendations: fallbackRecs });
+      return NextResponse.json({
+        success: true,
+        recommendations: fallbackRecs,
+        isAi: false,
+        quotaWarning,
+        quota: getDailyQuotaStatus(),
+      });
     }
   } catch (error: any) {
     console.error('Error in recommend route:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to generate recommendations' },
+      { success: false, error: error.message || 'Failed to generate recommendations', quota: getDailyQuotaStatus() },
       { status: 500 }
     );
   }

@@ -14,6 +14,7 @@ import {
   ArrowRight,
   BookOpen,
   Calendar,
+  AlertCircle,
 } from 'lucide-react';
 
 interface WhatToStudyModalProps {
@@ -28,6 +29,20 @@ export function WhatToStudyModal({
   onSelectTopicForFocus,
 }: WhatToStudyModalProps) {
   const { data, setActiveView } = usePlanner();
+  const [quota, setQuota] = React.useState<{ used: number; limit: number; remaining: number; isExceeded: boolean } | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      fetch('/api/gemini/quota')
+        .then((r) => r.json())
+        .then((res) => {
+          if (res.success && res.quota) {
+            setQuota(res.quota);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -68,11 +83,16 @@ export function WhatToStudyModal({
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center justify-between gap-2 mb-1">
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-forest/10 dark:bg-emerald-950/40 text-forest dark:text-emerald-300 text-[11px] font-semibold tracking-wider uppercase">
             <Compass className="w-3.5 h-3.5" />
             <span>Real-Time Study Assistant</span>
           </div>
+          {quota && !quota.isExceeded && (
+            <span className="text-[10px] font-mono text-ink-500 dark:text-ink-400">
+              {quota.remaining}/15 daily AI limit (5 buffer)
+            </span>
+          )}
         </div>
 
         <h3 id="what-to-study-title" className="font-serif text-2xl font-bold text-ink-950 dark:text-ink-50">
@@ -80,7 +100,7 @@ export function WhatToStudyModal({
         </h3>
 
         {/* Current Available Window */}
-        <div className="flex items-center gap-2 text-xs text-ink-600 dark:text-ink-400 mt-1 mb-5">
+        <div className="flex items-center gap-2 text-xs text-ink-600 dark:text-ink-400 mt-1 mb-4">
           <Clock className="w-4 h-4 text-forest dark:text-emerald-400" />
           <span>
             {result.nextCommitmentName
@@ -88,6 +108,21 @@ export function WhatToStudyModal({
               : `You have an open window of ~${result.availableMinutesNow} minutes right now.`}
           </span>
         </div>
+
+        {quota?.isExceeded && (
+          <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="space-y-0.5">
+              <div className="font-semibold flex items-center gap-1.5">
+                <span>Daily AI Limit Notice</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-200 dark:bg-amber-900/60 font-mono">15 requests/day limit (5 buffer)</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
+                You have reached the limit of 15 AI requests today (keeping 5 requests safety buffer). Showing transparent, rule-based recommendations based on your real syllabus and exam proximity.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Empty State if no subjects */}
         {!primary && (

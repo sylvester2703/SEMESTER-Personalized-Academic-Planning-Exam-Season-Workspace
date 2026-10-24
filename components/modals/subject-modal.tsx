@@ -19,6 +19,8 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { TimeInput12H } from '@/components/shared/time-input-12h';
@@ -63,6 +65,8 @@ export function SubjectModal({ isOpen, onClose, subjectToEdit }: SubjectModalPro
   const [unitContainers, setUnitContainers] = useState<UnitContainer[]>([]);
   const [showSyllabusDrawer, setShowSyllabusDrawer] = useState(false);
   const [rawSyllabusText, setRawSyllabusText] = useState('');
+  const [isExtractingAi, setIsExtractingAi] = useState(false);
+  const [aiQuotaWarning, setAiQuotaWarning] = useState<string | null>(null);
   const [newTopicByUnit, setNewTopicByUnit] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -202,6 +206,58 @@ export function SubjectModal({ isOpen, onClose, subjectToEdit }: SubjectModalPro
         },
       ]);
       setShowSyllabusDrawer(false);
+    }
+  };
+
+  // AI Parse with Gemini
+  const handleAiExtractSyllabus = async () => {
+    if (!rawSyllabusText.trim()) return;
+    setIsExtractingAi(true);
+    setAiQuotaWarning(null);
+
+    try {
+      const res = await fetch('/api/gemini/analyze-syllabus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: rawSyllabusText }),
+      });
+      const resData = await res.json();
+
+      if (resData.success && Array.isArray(resData.units) && resData.units.length > 0) {
+        const containers: UnitContainer[] = resData.units.map((u: any, idx: number) => ({
+          id: `unit-${Date.now()}-${idx + 1}`,
+          unitNumber: u.unitNumber ? `Unit ${u.unitNumber}` : `Unit ${idx + 1}`,
+          title: u.title || `Unit ${idx + 1}`,
+          topics: Array.isArray(u.topics)
+            ? u.topics.map((t: any) => (typeof t === 'string' ? t : t.title))
+            : ['Unit overview & key concepts'],
+        }));
+
+        setUnitContainers(containers);
+
+        if (resData.quotaWarning) {
+          setAiQuotaWarning(resData.quotaWarning);
+          addToast({
+            type: 'info',
+            title: 'Daily AI Limit Notice',
+            description: resData.quotaWarning,
+          });
+        } else {
+          addToast({
+            type: 'success',
+            title: 'Parsed with Gemini AI',
+            description: `Extracted ${containers.length} unit containers (${resData.quota?.remaining ?? '14'}/15 daily requests left).`,
+          });
+        }
+        setShowSyllabusDrawer(false);
+      } else {
+        handleParseSyllabusText(rawSyllabusText);
+      }
+    } catch (err: any) {
+      console.warn('AI Extraction failed, falling back to local parser:', err);
+      handleParseSyllabusText(rawSyllabusText);
+    } finally {
+      setIsExtractingAi(false);
     }
   };
 
@@ -529,19 +585,43 @@ export function SubjectModal({ isOpen, onClose, subjectToEdit }: SubjectModalPro
                   className="w-full text-xs p-2.5 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-white font-mono placeholder:font-sans"
                 />
 
-                <div className="flex items-center justify-between">
+                {aiQuotaWarning && (
+                  <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <div>
+                      <span className="font-semibold">Daily AI Limit (15/day with 5 buffer): </span>
+                      <span>{aiQuotaWarning}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-[11px] text-ink-500 dark:text-ink-400">
                     Recognizes Unit / Module headers and bulleted lesson topics automatically.
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleParseSyllabusText(rawSyllabusText)}
-                    disabled={!rawSyllabusText.trim()}
-                    className="px-3 py-1 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-md flex items-center gap-1.5 disabled:opacity-50 transition-all"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Extract into Unit Containers</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleParseSyllabusText(rawSyllabusText)}
+                      disabled={!rawSyllabusText.trim() || isExtractingAi}
+                      className="px-2.5 py-1 bg-paper-200 hover:bg-paper-300 dark:bg-paper-700 dark:hover:bg-paper-650 text-ink-800 dark:text-ink-200 text-xs font-medium rounded-md transition-all cursor-pointer"
+                    >
+                      <span>Standard Parse</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAiExtractSyllabus}
+                      disabled={!rawSyllabusText.trim() || isExtractingAi}
+                      className="px-3 py-1 bg-forest hover:bg-forest-hover text-white text-xs font-semibold rounded-md flex items-center gap-1.5 disabled:opacity-50 transition-all cursor-pointer shadow-xs"
+                    >
+                      {isExtractingAi ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3.5 h-3.5" />
+                      )}
+                      <span>{isExtractingAi ? 'Extracting with AI...' : '✨ Extract with Gemini AI'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generatePracticeQuestions } from '@/lib/ai/gemini';
+import { generatePracticeQuestions, getDailyQuotaStatus } from '@/lib/ai/gemini';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,21 +21,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const questions = await generatePracticeQuestions(
+    const result = await generatePracticeQuestions(
       subjectName || 'Course Material',
       topicTitle,
       count || 3
     );
 
-    return NextResponse.json({ success: true, questions });
+    return NextResponse.json({
+      success: true,
+      questions: result.questions,
+      isAi: result.isAi,
+      quotaWarning: result.quotaWarning,
+      quota: result.quota || getDailyQuotaStatus(),
+    });
   } catch (error: any) {
     console.error('Error in generate-practice route:', error);
+    const isQuotaError = error.message?.includes('Daily AI limit reached') || error.message?.includes('quota');
     return NextResponse.json(
       {
         success: false,
         error: error.message || 'Failed to generate practice questions',
+        quotaExceeded: isQuotaError,
+        quota: getDailyQuotaStatus(),
       },
-      { status: 500 }
+      { status: isQuotaError ? 429 : 500 }
     );
   }
 }

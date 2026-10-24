@@ -37,11 +37,15 @@ export function ActiveRecallModal({
   const [feynmanPitfall, setFeynmanPitfall] = useState<string>('');
   const [selectedRating, setSelectedRating] = useState<'difficult' | 'okay' | 'easy' | null>(null);
   const [aiQuestions, setAiQuestions] = useState<Array<{ question: string; answer: string }>>([]);
+  const [quotaWarning, setQuotaWarning] = useState<string | null>(null);
+  const [quotaRemaining, setQuotaRemaining] = useState<number | null>(null);
+  const [isAiGenerated, setIsAiGenerated] = useState<boolean>(false);
 
   React.useEffect(() => {
     if (isOpen && topic) {
       setStep('prompt');
       setSelectedRating(null);
+      setQuotaWarning(null);
       fetch('/api/gemini/generate-practice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,6 +59,13 @@ export function ActiveRecallModal({
         .then((res) => {
           if (res.success && Array.isArray(res.questions) && res.questions.length > 0) {
             setAiQuestions(res.questions);
+            setIsAiGenerated(Boolean(res.isAi));
+            if (res.quotaWarning) {
+              setQuotaWarning(res.quotaWarning);
+            }
+            if (res.quota) {
+              setQuotaRemaining(res.quota.remaining);
+            }
           }
         })
         .catch(() => {});
@@ -189,6 +200,21 @@ export function ActiveRecallModal({
               </button>
             </div>
 
+            {quotaWarning && (
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div className="space-y-0.5">
+                  <div className="font-semibold flex items-center gap-1.5">
+                    <span>Daily AI Limit Notice</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-200 dark:bg-amber-900/60 font-mono">15 requests/day limit (5 buffer)</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
+                    {quotaWarning}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="p-4 rounded-xl border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-800 text-center shadow-2xs">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-400">
                 {subject?.name || 'Topic for Recall'}
@@ -235,9 +261,16 @@ export function ActiveRecallModal({
               <div>
                 {aiQuestions.length > 0 && (
                   <div className="p-4 rounded-lg border border-forest/20 bg-forest/5 dark:bg-forest/15 space-y-1.5 text-xs mb-3">
-                    <span className="font-semibold text-forest dark:text-emerald-400 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Gemini Practice Question:</span>
+                    <span className="font-semibold text-forest dark:text-emerald-400 flex items-center justify-between gap-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>{isAiGenerated ? 'Gemini AI Practice Question:' : 'Active Recall Question:'}</span>
+                      </span>
+                      {quotaRemaining !== null && !quotaWarning && (
+                        <span className="text-[10px] font-mono text-ink-500 dark:text-ink-400">
+                          {quotaRemaining}/15 daily AI requests left
+                        </span>
+                      )}
                     </span>
                     <p className="text-ink-900 dark:text-white font-medium">
                       {aiQuestions[0].question}
