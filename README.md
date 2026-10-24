@@ -10,7 +10,7 @@
 [![Next.js 15](https://img.shields.io/badge/Next.js-15%20App%20Router-black?logo=next.js)](https://nextjs.org)
 [![TypeScript Strict](https://img.shields.io/badge/TypeScript-Strict%20Mode-blue?logo=typescript)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-Vanilla%20Tokens-38B2AC?logo=tailwind-css)](https://tailwindcss.com)
-[![Client-Side Only](https://img.shields.io/badge/Backend-Zero%20Servers%20%7C%20100%25%20Local-2D5541)](#local-first-data-architecture)
+[![Cloud & Offline Sync](https://img.shields.io/badge/Storage-Supabase%20Cloud%20%2B%20Local%20Cache-2D5541)](#2-comprehensive-system-architecture)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
@@ -27,7 +27,7 @@ The central principle is:
 
 > **"Your routine. Your subjects. Your goals. Your semester, planned around you."**
 
-The application works **entirely on the frontend** using local browser storage (`localStorage`) for persistence. No backend, no paid API keys, and no login barriers are required.
+The application provides seamless academic planning backed by **Supabase PostgreSQL cloud persistence** with **local browser caching (`localStorage`)**, ensuring your study plans, routines, and goals are securely saved to your account and accessible across all devices.
 
 ---
 
