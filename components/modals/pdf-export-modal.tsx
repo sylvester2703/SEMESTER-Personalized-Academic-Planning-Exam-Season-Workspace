@@ -28,6 +28,7 @@ export function PdfExportModal({ isOpen, onClose }: PdfExportModalProps) {
   const [includeCompleted, setIncludeCompleted] = useState<boolean>(true);
   const [includeNotes, setIncludeNotes] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isExportingIcs, setIsExportingIcs] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -108,8 +109,6 @@ export function PdfExportModal({ isOpen, onClose }: PdfExportModalProps) {
       setIsGenerating(false);
     }
   };
-
-  const [isExportingIcs, setIsExportingIcs] = useState<boolean>(false);
 
   const handleExportIcs = async () => {
     setIsExportingIcs(true);
