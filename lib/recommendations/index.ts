@@ -38,13 +38,21 @@ export function getSmartNextStep(
   // Find nearest upcoming exam
   const sortedExams = [...subjects]
     .map((s) => {
-      const examTime = s.examTime || '09:00';
-      const [h, m] = examTime.split(':').map(Number);
-      const d = parseISO(s.examDate);
-      d.setHours(h, m, 0, 0);
-      return { subject: s, dateObj: d };
+      try {
+        if (!s.examDate) return null;
+        const examTime = s.examTime || '09:00';
+        const parts = examTime.split(':').map(Number);
+        const h = isNaN(parts[0]) ? 9 : parts[0];
+        const m = isNaN(parts[1]) ? 0 : parts[1];
+        const d = parseISO(s.examDate);
+        if (isNaN(d.getTime())) return null;
+        d.setHours(h, m, 0, 0);
+        return { subject: s, dateObj: d };
+      } catch {
+        return null;
+      }
     })
-    .filter((s) => s.dateObj.getTime() >= now.getTime() - 1000 * 60 * 60 * 3)
+    .filter((item): item is { subject: Subject; dateObj: Date } => item !== null && !isNaN(item.dateObj.getTime()) && item.dateObj.getTime() >= now.getTime() - 1000 * 60 * 60 * 3)
     .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
 
   if (sortedExams.length === 0) {
@@ -209,7 +217,17 @@ export function calculateWhatShouldIStudyNow(
     || topics.find((t) => t.subjectId === primarySubj?.id && t.status === 'not_started')
     || topics.find((t) => t.subjectId === primarySubj?.id);
 
-  const daysToPrimary = primarySubj ? differenceInDays(parseISO(primarySubj.examDate), now) : 0;
+  let daysToPrimary = 0;
+  try {
+    if (primarySubj?.examDate) {
+      const d = parseISO(primarySubj.examDate);
+      if (!isNaN(d.getTime())) {
+        daysToPrimary = differenceInDays(d, now);
+      }
+    }
+  } catch {
+    daysToPrimary = 0;
+  }
   let primaryTitle = primaryTopic
     ? primaryTopic.unitOrModule
       ? `${primaryTopic.unitOrModule} — ${primaryTopic.title}`
@@ -226,7 +244,17 @@ export function calculateWhatShouldIStudyNow(
     || topics.find((t) => t.subjectId === altSubj?.id && t.id !== primaryTopic?.id);
 
   const altDuration = Math.min(availableMinutesNow, 25);
-  const daysToAlt = altSubj ? differenceInDays(parseISO(altSubj.examDate), now) : 0;
+  let daysToAlt = 0;
+  try {
+    if (altSubj?.examDate) {
+      const d = parseISO(altSubj.examDate);
+      if (!isNaN(d.getTime())) {
+        daysToAlt = differenceInDays(d, now);
+      }
+    }
+  } catch {
+    daysToAlt = 0;
+  }
   let altTitle = altTopic
     ? altTopic.unitOrModule
       ? `Active Recall: ${altTopic.unitOrModule} — ${altTopic.title}`

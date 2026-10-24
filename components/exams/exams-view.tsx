@@ -102,7 +102,17 @@ export function ExamsView({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {sortedSubjects.map((subj) => {
             const readiness = calculateSubjectReadiness(data.topics, subj.id);
-            const daysRemaining = differenceInDays(parseISO(subj.examDate), now);
+            let daysRemaining: number = 0;
+            try {
+              if (subj.examDate) {
+                const d = parseISO(subj.examDate);
+                if (!isNaN(d.getTime())) {
+                  daysRemaining = differenceInDays(d, now);
+                }
+              }
+            } catch {
+              daysRemaining = 0;
+            }
             const isToday = daysRemaining === 0;
             const isPast = daysRemaining < 0;
 

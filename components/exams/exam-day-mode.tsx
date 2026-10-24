@@ -25,21 +25,31 @@ export function ExamDayMode() {
   const [newItemText, setNewItemText] = useState('');
   const now = new Date();
 
-  // Find if any exam is within 48 hours or today
+  // Find if any exam is within 48 hours or today safely
   const upcomingSoon = data.subjects
+    .filter((s) => Boolean(s?.examDate))
     .map((s) => {
-      const timeStr = s.examTime || '09:00';
-      const [h, m] = timeStr.split(':').map(Number);
-      const d = parseISO(s.examDate);
-      d.setHours(h, m, 0, 0);
-      return {
-        subject: s,
-        targetDate: d,
-        hoursRemaining: Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60)),
-        daysRemaining: differenceInDays(d, now),
-      };
+      try {
+        const timeStr = s.examTime || '09:00';
+        const parts = timeStr.split(':').map(Number);
+        const hours = isNaN(parts[0]) ? 9 : parts[0];
+        const minutes = isNaN(parts[1]) ? 0 : parts[1];
+        const d = parseISO(s.examDate);
+        if (isNaN(d.getTime())) return null;
+        d.setHours(hours, minutes, 0, 0);
+        return {
+          subject: s,
+          targetDate: d,
+          hoursRemaining: Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60)),
+          daysRemaining: differenceInDays(d, now),
+        };
+      } catch {
+        return null;
+      }
     })
-    .filter((item) => item.hoursRemaining >= -6 && item.hoursRemaining <= 72)
+    .filter((item): item is { subject: Subject; targetDate: Date; hoursRemaining: number; daysRemaining: number } =>
+      item !== null && !isNaN(item.targetDate.getTime()) && item.hoursRemaining >= -6 && item.hoursRemaining <= 72
+    )
     .sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime());
 
   if (upcomingSoon.length === 0) return null;

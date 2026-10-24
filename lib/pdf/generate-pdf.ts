@@ -16,6 +16,65 @@ function applyAutoTable(doc: any, options: any) {
   }
 }
 
+export function safeDownloadBlob(blob: Blob, filename: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener noreferrer';
+    // Crucial: stop propagation so Next.js Link router does not intercept the click!
+    const stopNav = (e: MouseEvent) => {
+      e.stopPropagation();
+    };
+    a.addEventListener('click', stopNav, { once: true });
+    document.body.appendChild(a);
+    if (typeof a.click === 'function') {
+      a.click();
+    } else {
+      a.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: true }));
+    }
+    setTimeout(() => {
+      try {
+        if (document.body.contains(a)) {
+          document.body.removeChild(a);
+        }
+        window.URL.revokeObjectURL(url);
+      } catch {
+        // Ignore cleanup error
+      }
+    }, 1500);
+  } catch (err) {
+    console.warn('[safeDownloadBlob] Download error:', err);
+  }
+}
+
+function safeFormatDate(dateStr?: string, fmt: string = 'EEE, dd MMM yyyy', fallback: string = 'TBD'): string {
+  if (!dateStr) return fallback;
+  try {
+    const d = parseISO(dateStr);
+    if (isNaN(d.getTime())) return fallback;
+    return format(d, fmt);
+  } catch {
+    return fallback;
+  }
+}
+
+function safeGetDaysLeft(dateStr?: string, now: Date = new Date()): { label: string; days: number } {
+  if (!dateStr) return { label: 'TBD', days: 0 };
+  try {
+    const d = parseISO(dateStr);
+    if (isNaN(d.getTime())) return { label: 'TBD', days: 0 };
+    const days = differenceInDays(d, now);
+    const label = days === 0 ? 'TODAY' : days < 0 ? 'Passed' : `${days} days`;
+    return { label, days };
+  } catch {
+    return { label: 'TBD', days: 0 };
+  }
+}
+
 export type PdfExportType = 'full' | 'timetable' | 'daily' | 'exams' | 'syllabus';
 
 export interface PdfExportOptions {
@@ -253,22 +312,23 @@ export async function generateStudyPlannerPdf(
       doc.setTextColor(...COLORS.subtleGray);
       doc.text('Chronological sequence of all upcoming examination papers, venue details, and preparation status.', 14, 34);
 
-      const sortedExams = [...data.subjects].sort((a, b) => new Date(a.examDate).getTime() - new Date(b.examDate).getTime());
+      const sortedExams = [...data.subjects].sort((a, b) => {
+        const da = a.examDate ? new Date(a.examDate).getTime() : 0;
+        const db = b.examDate ? new Date(b.examDate).getTime() : 0;
+        return da - db;
+      });
 
       const examRows = sortedExams.length > 0
         ? sortedExams.map((s) => {
-            const d = parseISO(s.examDate);
-            const daysLeft = differenceInDays(d, now);
+            const daysInfo = safeGetDaysLeft(s.examDate, now);
             const subjTopics = data.topics.filter((t) => t.subjectId === s.id);
             const confidentCount = subjTopics.filter((t) => t.status === 'confident').length;
             const prepStr = subjTopics.length > 0 ? `${confidentCount}/${subjTopics.length} confident` : '0 topics';
 
-            let daysLabel = daysLeft === 0 ? 'TODAY' : daysLeft < 0 ? 'Passed' : `${daysLeft} days`;
-
             return [
               `${s.name}\n(${s.code || 'No code'})`,
-              `${format(d, 'EEE, dd MMM yyyy')}\n${formatTime12Hour(s.examTime || '09:00')}`,
-              daysLabel,
+              `${safeFormatDate(s.examDate, 'EEE, dd MMM yyyy')}\n${formatTime12Hour(s.examTime || '09:00')}`,
+              daysInfo.label,
               s.examLocation || 'Campus Hall',
               (s.difficulty || 'Moderate').toUpperCase(),
               prepStr,
@@ -332,7 +392,7 @@ export async function generateStudyPlannerPdf(
       const sessionRows = sortedSessions.length > 0
         ? sortedSessions.map((sess) => {
             const subj = data.subjects.find((s) => s.id === sess.subjectId);
-            const dateFormatted = format(parseISO(sess.date), 'EEE, dd MMM');
+            const dateFormatted = safeFormatDate(sess.date, 'EEE, dd MMM', sess.date || 'Scheduled');
             const timeRange = `${formatTimeRange(sess.startTime, sess.endTime)} (${sess.durationMinutes}m)`;
             const statusBox = sess.completed ? '[X] Done' : '[  ] Open';
 
@@ -549,7 +609,7 @@ export async function generateStudyPlannerPdf(
       const sessionRows = sortedSessions.map((sess) => {
         const subj = data.subjects.find((s) => s.id === sess.subjectId);
         return [
-          format(parseISO(sess.date), 'EEE, dd MMM'),
+          safeFormatDate(sess.date, 'EEE, dd MMM', sess.date || 'Scheduled'),
           formatTimeRange(sess.startTime, sess.endTime),
           `${sess.durationMinutes}m`,
           subj?.name || 'Study',
@@ -593,7 +653,7 @@ export async function generateStudyPlannerPdf(
     // ----------------------------------------------------
     else if (options.type === 'daily') {
       const targetDateStr = options.selectedDate || format(now, 'yyyy-MM-dd');
-      const targetDateObj = parseISO(targetDateStr);
+      const targetDateDisplay = safeFormatDate(targetDateStr, 'EEEE, dd MMMM yyyy', 'Today');
 
       doc.setFont('times', 'bold');
       doc.setFontSize(22);
@@ -603,7 +663,7 @@ export async function generateStudyPlannerPdf(
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9.5);
       doc.setTextColor(...COLORS.forestGreen);
-      doc.text(`${format(targetDateObj, 'EEEE, dd MMMM yyyy')}  ·  ${studentName}`, 14, 33);
+      doc.text(`${targetDateDisplay}  ·  ${studentName}`, 14, 33);
 
       const daySessions = data.sessions.filter((s) => s.date === targetDateStr);
       const dayRows = daySessions.map((s) => {
@@ -674,19 +734,22 @@ export async function generateStudyPlannerPdf(
       doc.setTextColor(...COLORS.subtleGray);
       doc.text(`Comprehensive examination deadlines, locations, and high-yield focus topics.`, 14, 32);
 
-      const sortedExams = [...data.subjects].sort((a, b) => new Date(a.examDate).getTime() - new Date(b.examDate).getTime());
+      const sortedExams = [...data.subjects].sort((a, b) => {
+        const da = a.examDate ? new Date(a.examDate).getTime() : 0;
+        const db = b.examDate ? new Date(b.examDate).getTime() : 0;
+        return da - db;
+      });
 
       const rows = sortedExams.map((s) => {
-        const d = parseISO(s.examDate);
-        const daysLeft = differenceInDays(d, now);
+        const daysInfo = safeGetDaysLeft(s.examDate, now);
         const subjTopics = data.topics.filter((t) => t.subjectId === s.id);
         const uncompleted = subjTopics.filter((t) => t.status !== 'confident');
 
         return [
           s.name,
           s.code || '—',
-          format(d, 'dd MMM yyyy'),
-          daysLeft === 0 ? 'TODAY' : `${daysLeft} days`,
+          safeFormatDate(s.examDate, 'dd MMM yyyy'),
+          daysInfo.label,
           s.examLocation || 'TBD',
           `${uncompleted.length} topics pending`,
         ];
@@ -787,13 +850,21 @@ export async function generateStudyPlannerPdf(
     // Add running headers & footers across all pages
     addRunningHeaderFooter(doc, data);
 
-    // Save and trigger browser download
+    // Save and trigger browser download safely without bubbling to Next.js router
     const safeDate = format(now, 'yyyy-MM-dd');
-    const safeName = studentName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const safeName = (studentName || 'student').toLowerCase().replace(/[^a-z0-9]/g, '_');
     const filename = `SEMESTER_${options.type}_planner_${safeName}_${safeDate}.pdf`;
 
-    if (typeof window !== 'undefined' && typeof doc.save === 'function') {
-      doc.save(filename);
+    if (typeof window !== 'undefined') {
+      try {
+        const blob = doc.output('blob');
+        safeDownloadBlob(blob, filename);
+      } catch (blobErr) {
+        console.warn('[PDF Generator] Output blob fallback:', blobErr);
+        if (typeof doc.save === 'function') {
+          doc.save(filename);
+        }
+      }
     }
     return true;
   } catch (err) {

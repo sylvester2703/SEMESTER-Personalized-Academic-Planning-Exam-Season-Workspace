@@ -351,7 +351,18 @@ export function generateSuggestedWeeklyPlan(
 
   let explanation = `Your plan was built around your ${routineHighlights.join(', ')}, and upcoming examinations.`;
   if (highestPrioritySubject) {
-    explanation += ` ${highestPrioritySubject.name} (${highestPrioritySubject.code || ''}) has been prioritised because its exam is in ${differenceInDays(parseISO(highestPrioritySubject.examDate), now)} days and ${highestPriorityUncompletedCount > 0 ? `${highestPriorityUncompletedCount} topics still require revision` : 'key concepts need consolidation'}.`;
+    let daysToHighest = 7;
+    try {
+      if (highestPrioritySubject.examDate) {
+        const d = parseISO(highestPrioritySubject.examDate);
+        if (!isNaN(d.getTime())) {
+          daysToHighest = Math.max(0, differenceInDays(d, now));
+        }
+      }
+    } catch {
+      daysToHighest = 7;
+    }
+    explanation += ` ${highestPrioritySubject.name} (${highestPrioritySubject.code || ''}) has been prioritised because its exam is in ${daysToHighest} days and ${highestPriorityUncompletedCount > 0 ? `${highestPriorityUncompletedCount} topics still require revision` : 'key concepts need consolidation'}.`;
   }
 
   // Feasibility check

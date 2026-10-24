@@ -53,10 +53,22 @@ export function generateExamTriagePlan(
   const examTimeStr = subject.examTime || '09:00';
   const [examH, examM] = examTimeStr.split(':').map(Number);
 
-  const examDateTime = parseISO(examDateStr);
-  examDateTime.setHours(examH, examM, 0, 0);
-
-  const hoursUntilExam = Math.max(1, differenceInHours(examDateTime, now));
+  let examDateTime = new Date(now.getTime() + 48 * 3600 * 1000);
+  let hoursUntilExam = 48;
+  try {
+    if (examDateStr) {
+      const parsed = parseISO(examDateStr);
+      if (!isNaN(parsed.getTime())) {
+        const h = isNaN(examH) ? 9 : examH;
+        const m = isNaN(examM) ? 0 : examM;
+        parsed.setHours(h, m, 0, 0);
+        examDateTime = parsed;
+        hoursUntilExam = Math.max(1, differenceInHours(examDateTime, now));
+      }
+    }
+  } catch {
+    hoursUntilExam = 48;
+  }
   const subjTopics = topics.filter((t) => t.subjectId === subject.id);
 
   // Classify topics into Triage Tiers

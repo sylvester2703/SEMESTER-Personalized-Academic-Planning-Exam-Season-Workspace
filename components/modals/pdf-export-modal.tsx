@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
-import { generateStudyPlannerPdf, PdfExportType } from '@/lib/pdf/generate-pdf';
+import { generateStudyPlannerPdf, safeDownloadBlob, PdfExportType } from '@/lib/pdf/generate-pdf';
 import {
   FileDown,
   X,
@@ -127,14 +127,8 @@ export function PdfExportModal({ isOpen, onClose }: PdfExportModalProps) {
       if (!res.ok) throw new Error('Export failed');
 
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${(data.profile.semesterName || 'semester-exam-plan').toLowerCase().replace(/\s+/g, '-')}.ics`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const filename = `${(data.profile.semesterName || 'semester-exam-plan').toLowerCase().replace(/\s+/g, '-')}.ics`;
+      safeDownloadBlob(blob, filename);
 
       addToast({
         type: 'success',

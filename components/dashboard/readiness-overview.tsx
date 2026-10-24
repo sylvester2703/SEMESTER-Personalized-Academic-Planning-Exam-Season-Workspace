@@ -63,7 +63,17 @@ export function ReadinessOverview({
       <div className="mt-4 space-y-4">
         {subjects.map((subj) => {
           const stats = calculateSubjectReadiness(topics, subj.id);
-          const daysLeft = differenceInDays(parseISO(subj.examDate), now);
+          let daysLeft: number | null = null;
+          try {
+            if (subj.examDate) {
+              const d = parseISO(subj.examDate);
+              if (!isNaN(d.getTime())) {
+                daysLeft = differenceInDays(d, now);
+              }
+            }
+          } catch {
+            daysLeft = null;
+          }
 
           return (
             <div
@@ -108,7 +118,11 @@ export function ReadinessOverview({
               {/* Status details */}
               <div className="mt-2 flex items-center justify-between text-[11px] text-ink-500 dark:text-ink-400">
                 <span>
-                  {daysLeft >= 0 ? `${daysLeft} days to exam` : 'Exam completed'}
+                  {daysLeft !== null
+                    ? daysLeft >= 0
+                      ? `${daysLeft} days to exam`
+                      : 'Exam completed'
+                    : 'Date TBD'}
                 </span>
                 <span>
                   {stats.needsRevisionCount > 0 ? (

@@ -69,8 +69,17 @@ export function simulateGradeTarget(
   now: Date = new Date()
 ): GradeSimulationResult {
   const subjTopics = topics.filter((t) => t.subjectId === subject.id);
-  const examDate = parseISO(subject.examDate);
-  const daysRemaining = Math.max(1, differenceInDays(examDate, now));
+  let daysRemaining = 14;
+  try {
+    if (subject.examDate) {
+      const examDate = parseISO(subject.examDate);
+      if (!isNaN(examDate.getTime())) {
+        daysRemaining = Math.max(1, differenceInDays(examDate, now));
+      }
+    }
+  } catch {
+    daysRemaining = 14;
+  }
 
   // Weights for topic status
   const STATUS_WEIGHTS = {
