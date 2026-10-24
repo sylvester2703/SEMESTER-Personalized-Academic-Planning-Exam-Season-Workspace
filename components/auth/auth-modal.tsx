@@ -180,28 +180,38 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{errorMsg}</span>
             </div>
-            {mode === 'signup' && (
+            {mode === 'signup' && (errorMsg.toLowerCase().includes('already') || errorMsg.toLowerCase().includes('exists')) && (
               <button
                 type="button"
                 onClick={() => {
-                  updateProfile({
-                    displayName: fullName.trim() || email.split('@')[0],
-                    email: email.trim(),
-                    phone: phone.trim() || undefined,
-                  });
-                  addToast({
-                    type: 'info',
-                    title: 'Offline Storage Active',
-                    description: 'Logged in as guest. All your study sessions and exam dates are saved locally.',
-                  });
-                  setActiveView('dashboard');
-                  onClose();
+                  setErrorMsg(null);
+                  setMode('signin');
                 }}
-                className="self-start text-[11px] font-semibold text-forest dark:text-emerald-400 hover:underline mt-1 cursor-pointer"
+                className="self-start text-[11px] font-semibold text-forest dark:text-emerald-400 hover:underline mt-0.5 cursor-pointer"
               >
-                Or continue into Planner using Browser Storage &rarr;
+                Already registered? Click here to Sign In with your password &rarr;
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => {
+                updateProfile({
+                  displayName: fullName.trim() || (email ? email.split('@')[0] : 'Student'),
+                  email: email.trim() || undefined,
+                  phone: phone.trim() || undefined,
+                });
+                addToast({
+                  type: 'info',
+                  title: 'Browser Storage Active',
+                  description: 'All your study sessions, exams, and timetable are saved in browser storage.',
+                });
+                setActiveView('dashboard');
+                onClose();
+              }}
+              className="self-start text-[11px] font-semibold text-forest dark:text-emerald-400 hover:underline mt-0.5 cursor-pointer"
+            >
+              Or continue into Planner using Browser Storage &rarr;
+            </button>
           </div>
         )}
 
