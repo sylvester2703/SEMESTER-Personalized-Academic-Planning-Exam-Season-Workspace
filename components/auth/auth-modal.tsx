@@ -12,7 +12,6 @@ import {
   AlertCircle,
   Loader2,
   ShieldCheck,
-  Cloud,
   Phone,
   BellRing,
 } from 'lucide-react';
@@ -71,7 +70,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
           addToast({
             type: 'success',
             title: 'Account created & synced',
-            description: 'Your Supabase cloud account is active. Study schedule updates configured.',
+            description: 'Your account is active. Study schedule updates configured.',
           });
           await syncToCloud();
           setActiveView('dashboard');
@@ -157,24 +156,15 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2 mb-2">
-          <div className="p-1.5 rounded-md bg-forest/10 text-forest dark:text-emerald-400">
-            <Cloud className="w-4 h-4" />
-          </div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-forest dark:text-emerald-400">
-            Supabase Cloud Sync
-          </span>
-        </div>
-
-        <h3 className="font-serif text-2xl font-bold text-ink-950 dark:text-ink-50">
+        <h3 className="font-serif text-2xl font-bold text-ink-950 dark:text-ink-50 mt-1">
           {mode === 'signin' && 'Sign in to SEMESTER'}
-          {mode === 'signup' && 'Create your Cloud Account'}
+          {mode === 'signup' && 'Create your Account'}
           {mode === 'forgot' && 'Reset your Password'}
         </h3>
 
         <p className="text-xs text-ink-500 dark:text-ink-400 mt-1 mb-5">
           {mode === 'signin' && 'Access your synced study schedule and syllabus across devices.'}
-          {mode === 'signup' && 'Securely backup your timetable, exam dates, and revision tracker to PostgreSQL.'}
+          {mode === 'signup' && 'Securely backup your timetable, exam dates, and revision tracker.'}
           {mode === 'forgot' && 'Enter your email to receive a secure password recovery link.'}
         </p>
 
@@ -355,7 +345,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
             {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             <span>
               {mode === 'signin' && 'Sign In'}
-              {mode === 'signup' && 'Create Cloud Account'}
+              {mode === 'signup' && 'Create Account'}
               {mode === 'forgot' && 'Send Password Reset Link'}
             </span>
           </button>
@@ -364,7 +354,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
         <div className="mt-5 pt-4 border-t border-paper-200 dark:border-paper-800 text-center text-xs text-ink-500">
           {mode === 'signin' ? (
             <p>
-              Don't have a cloud account yet?{' '}
+              Don't have an account yet?{' '}
               <button
                 type="button"
                 onClick={() => {
