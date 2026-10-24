@@ -101,6 +101,20 @@ export async function resetPasswordForEmail(email: string) {
   });
 }
 
+export async function updateUserName(newName: string) {
+  const trimmed = newName.trim();
+  if (!trimmed) {
+    return { data: null, error: new Error('User name cannot be empty') };
+  }
+  return await supabase.auth.updateUser({
+    data: {
+      full_name: trimmed,
+      display_name: trimmed,
+      name: trimmed,
+    },
+  });
+}
+
 /**
  * Fetch complete student workspace from Supabase for the authenticated user
  */

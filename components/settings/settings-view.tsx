@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { usePlanner } from '@/lib/context/planner-context';
 import {
   Settings,
@@ -42,6 +42,8 @@ export function SettingsView() {
     importData,
     addToast,
     currentUser,
+    userName,
+    updateUserName,
     syncStatus,
     syncToCloud,
     restoreFromCloud,
@@ -50,12 +52,31 @@ export function SettingsView() {
   } = usePlanner();
 
   const [displayName, setDisplayName] = useState(data.profile.displayName);
+  const [userNameInput, setUserNameInput] = useState(userName || data.profile.displayName || '');
+  const [isSavingName, setIsSavingName] = useState(false);
   const [semesterName, setSemesterName] = useState(data.profile.semesterName);
   const [dailyHours, setDailyHours] = useState(
     data.profile.preferences?.dailyAvailabilityHours || data.profile.dailyAvailabilityHours || 4
   );
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [resetType, setResetType] = useState<'sample' | 'empty'>('sample');
+
+  // Synchronize userNameInput when userName updates in context
+  useEffect(() => {
+    if (userName) {
+      setUserNameInput(userName);
+      setDisplayName(userName);
+    }
+  }, [userName]);
+
+  const handleSaveUserName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userNameInput.trim()) return;
+    setIsSavingName(true);
+    await updateUserName(userNameInput.trim());
+    setDisplayName(userNameInput.trim());
+    setIsSavingName(false);
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -220,6 +241,70 @@ export function SettingsView() {
         </div>
       </div>
 
+      {/* Account Identity & User Name Setting Card */}
+      <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-5 sm:p-6 shadow-subtle">
+        <div className="flex items-center justify-between pb-3 border-b border-paper-200 dark:border-paper-800">
+          <div className="flex items-center gap-2">
+            <User className="w-5 h-5 text-forest dark:text-emerald-400" />
+            <div>
+              <h3 className="font-serif text-lg font-semibold text-ink-950 dark:text-ink-50">
+                User Name & Account Identity
+              </h3>
+              <p className="text-[11px] text-ink-500 dark:text-ink-400 mt-0.5">
+                Set your personal user name to be shown across the website, navigation bar, and study plans instead of your email ID.
+              </p>
+            </div>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 border border-forest/20">
+            {userName}
+          </span>
+        </div>
+
+        <form onSubmit={handleSaveUserName} className="mt-4 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1.5">
+                Display User Name
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={userNameInput}
+                  onChange={(e) => setUserNameInput(e.target.value)}
+                  maxLength={40}
+                  className="flex-1 text-xs rounded-md border border-paper-300 dark:border-paper-750 bg-white dark:bg-paper-800 p-2.5 text-ink-900 dark:text-ink-100 font-medium focus-visible:ring-2 focus-visible:ring-forest"
+                  placeholder="e.g. Sylvester or Alex"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={isSavingName || !userNameInput.trim()}
+                  className="px-4 py-2.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5 shrink-0"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{isSavingName ? 'Saving...' : 'Save Name'}</span>
+                </button>
+              </div>
+              <p className="text-[11px] text-ink-500 dark:text-ink-400 mt-1.5">
+                This user name replaces your email address across all greetings, badges, and exported files.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ink-800 dark:text-ink-200 mb-1.5">
+                Registered Account Email
+              </label>
+              <div className="p-2.5 rounded-md bg-paper-100 dark:bg-paper-800/60 border border-paper-300/80 dark:border-paper-750 text-xs font-mono text-ink-700 dark:text-ink-300 truncate">
+                {currentUser ? currentUser.email : 'Guest Mode (No active account)'}
+              </div>
+              <p className="text-[11px] text-ink-500 dark:text-ink-400 mt-1.5">
+                Your email ID is used strictly for authentication and schedule updates.
+              </p>
+            </div>
+          </div>
+        </form>
+      </div>
+
       {/* Supabase Cloud Sync Card */}
       <div className="bg-white dark:bg-paper-900 border border-paper-300 dark:border-paper-800 rounded-lg p-5 sm:p-6 shadow-subtle">
         <div className="flex items-center justify-between pb-3 border-b border-paper-200 dark:border-paper-800">
@@ -245,8 +330,11 @@ export function SettingsView() {
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 rounded-lg bg-paper-50 dark:bg-paper-800/60 border border-paper-200 dark:border-paper-700 text-xs">
                 <div>
-                  <span className="text-ink-500 block text-[11px]">Connected Account:</span>
-                  <strong className="text-ink-900 dark:text-white font-mono">{currentUser.email}</strong>
+                  <span className="text-ink-500 block text-[11px]">Connected Student:</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <strong className="text-ink-900 dark:text-white font-semibold">{userName}</strong>
+                    <span className="text-ink-500 font-mono text-[11px]">({currentUser.email})</span>
+                  </div>
                 </div>
                 <button
                   type="button"

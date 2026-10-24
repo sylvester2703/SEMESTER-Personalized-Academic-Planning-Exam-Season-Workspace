@@ -38,7 +38,16 @@ function PlannerApp() {
     setIsOnboardingOpen,
     isAuthModalOpen,
     setIsAuthModalOpen,
+    currentUser,
+    addToast,
   } = usePlanner();
+
+  // Enforce authentication: if logged out, ensure view remains strictly on landing page
+  React.useEffect(() => {
+    if (!currentUser && activeView !== 'landing') {
+      setActiveView('landing');
+    }
+  }, [currentUser, activeView, setActiveView]);
 
   // Modal states
   const [sessionModalOpen, setSessionModalOpen] = useState(false);
@@ -70,8 +79,23 @@ function PlannerApp() {
   const [examTriageModalOpen, setExamTriageModalOpen] = useState(false);
   const [initialTriageSubjId, setInitialTriageSubjId] = useState<string | undefined>();
 
+  // Guard helper: prompts login if user is not authenticated
+  const requireAuth = (actionName: string) => {
+    if (!currentUser) {
+      addToast({
+        type: 'info',
+        title: 'Sign In Required',
+        description: `Please sign in or create an account to ${actionName}.`,
+      });
+      setIsAuthModalOpen(true);
+      return false;
+    }
+    return true;
+  };
+
   // Handlers for opening modals
   const handleOpenNewSession = (date?: string, subjId?: string) => {
+    if (!requireAuth('schedule study sessions')) return;
     setSessionToEdit(null);
     setInitialSessionDate(date);
     setInitialSessionSubjId(subjId);
@@ -79,42 +103,50 @@ function PlannerApp() {
   };
 
   const handleEditSession = (session: StudySession) => {
+    if (!requireAuth('edit study sessions')) return;
     setSessionToEdit(session);
     setSessionModalOpen(true);
   };
 
   const handleOpenNewSubject = () => {
+    if (!requireAuth('add courses or examinations')) return;
     setSubjectToEdit(null);
     setSubjectModalOpen(true);
   };
 
   const handleEditSubject = (subject: Subject) => {
+    if (!requireAuth('edit courses')) return;
     setSubjectToEdit(subject);
     setSubjectModalOpen(true);
   };
 
   const handleOpenNewTopic = (subjectId: string) => {
+    if (!requireAuth('manage syllabus topics')) return;
     setTopicToEdit(null);
     setInitialTopicSubjId(subjectId);
     setTopicModalOpen(true);
   };
 
   const handleEditTopic = (topic: Topic) => {
+    if (!requireAuth('edit syllabus topics')) return;
     setTopicToEdit(topic);
     setTopicModalOpen(true);
   };
 
   const handleRecoverSession = (session: StudySession) => {
+    if (!requireAuth('recover missed sessions')) return;
     setSessionToRecover(session);
     setMissedSessionModalOpen(true);
   };
 
   const handleOpenRecall = (topic: Topic) => {
+    if (!requireAuth('access active recall revision')) return;
     setTopicForRecall(topic);
     setActiveRecallModalOpen(true);
   };
 
   const handleOpenSyllabusManager = (subjectId?: string) => {
+    if (!requireAuth('import or manage syllabi')) return;
     setInitialSyllabusSubjId(subjectId);
     setSyllabusManagerOpen(true);
   };
@@ -125,8 +157,14 @@ function PlannerApp() {
       <AppHeader
         onOpenNewSession={() => handleOpenNewSession()}
         onOpenNewSubject={handleOpenNewSubject}
-        onOpenPdfExport={() => setPdfModalOpen(true)}
-        onOpenWhatToStudy={() => setWhatToStudyOpen(true)}
+        onOpenPdfExport={() => {
+          if (!requireAuth('download your study planner PDF')) return;
+          setPdfModalOpen(true);
+        }}
+        onOpenWhatToStudy={() => {
+          if (!requireAuth('use the study assistant')) return;
+          setWhatToStudyOpen(true);
+        }}
       />
 
       {/* Main View Area with mobile bottom nav safe-area padding */}
@@ -189,8 +227,14 @@ function PlannerApp() {
 
       {/* SEMESTER Brand Footer */}
       <AppFooter
-        onOpenPdfExport={() => setPdfModalOpen(true)}
-        onOpenWhatToStudy={() => setWhatToStudyOpen(true)}
+        onOpenPdfExport={() => {
+          if (!requireAuth('download your study planner PDF')) return;
+          setPdfModalOpen(true);
+        }}
+        onOpenWhatToStudy={() => {
+          if (!requireAuth('use the study assistant')) return;
+          setWhatToStudyOpen(true);
+        }}
       />
 
       {/* Floating notifications */}

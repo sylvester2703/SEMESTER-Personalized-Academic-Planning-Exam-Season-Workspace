@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export function LandingView() {
-  const { data, setActiveView, setIsOnboardingOpen, setIsAuthModalOpen, currentUser, signOut } = usePlanner();
+  const { data, setActiveView, setIsOnboardingOpen, setIsAuthModalOpen, currentUser, userName, signOut, addToast } = usePlanner();
 
   // Live ticking countdown for "Extra Marks for Effort"
   const [countdown, setCountdown] = useState(() => calculateExamCountdown(data.subjects));
@@ -81,9 +81,9 @@ export function LandingView() {
         <div className="flex flex-wrap items-center justify-center gap-3">
           {currentUser ? (
             <>
-              <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-300 text-sm font-medium border border-forest/30">
+              <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-300 text-sm font-medium border border-forest/30" title={`Signed in as ${userName} (${currentUser.email})`}>
                 <User className="w-4 h-4 shrink-0" />
-                <span>Logged in as <strong>{currentUser.email}</strong></span>
+                <span>Welcome, <strong>{userName}</strong></span>
               </div>
 
               <button
@@ -122,7 +122,14 @@ export function LandingView() {
               </button>
 
               <button
-                onClick={() => setIsOnboardingOpen(true)}
+                onClick={() => {
+                  addToast({
+                    type: 'info',
+                    title: 'Sign In Required',
+                    description: 'Please sign in or create an account to start building your study plan.',
+                  });
+                  setIsAuthModalOpen(true);
+                }}
                 className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-forest/30 bg-forest/5 dark:bg-forest/20 text-forest dark:text-emerald-300 text-sm font-semibold hover:bg-forest/10 transition-colors shadow-subtle cursor-pointer"
               >
                 <Sparkles className="w-4 h-4" />
@@ -132,8 +139,19 @@ export function LandingView() {
           )}
 
           <button
-            onClick={() => setActiveView('dashboard')}
-            className="inline-flex items-center justify-center gap-2 px-4 py-3 text-xs font-semibold text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-white transition-colors"
+            onClick={() => {
+              if (!currentUser) {
+                addToast({
+                  type: 'info',
+                  title: 'Sign In Required',
+                  description: 'Please sign in or create an account to explore the dashboard.',
+                });
+                setIsAuthModalOpen(true);
+                return;
+              }
+              setActiveView('dashboard');
+            }}
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 text-xs font-semibold text-ink-600 dark:text-ink-400 hover:text-ink-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             <span>Explore Dashboard</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -488,7 +506,7 @@ export function LandingView() {
                   className="px-5 py-3 rounded-lg border border-white/60 hover:bg-white/10 text-white text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Logout ({currentUser.email?.split('@')[0]})</span>
+                  <span>Logout ({userName})</span>
                 </button>
               </>
             ) : (
@@ -500,7 +518,14 @@ export function LandingView() {
                   Sign Up & Create Study Plan
                 </button>
                 <button
-                  onClick={() => setActiveView('dashboard')}
+                  onClick={() => {
+                    addToast({
+                      type: 'info',
+                      title: 'Sign In Required',
+                      description: 'Please sign in or create an account to access the workspace.',
+                    });
+                    setIsAuthModalOpen(true);
+                  }}
                   className="px-6 py-3 rounded-lg border border-white/40 hover:bg-white/10 text-white text-xs font-medium transition-colors cursor-pointer"
                 >
                   Open Workspace
@@ -521,20 +546,53 @@ export function LandingView() {
 
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setActiveView('dashboard')}
-            className="hover:text-forest dark:hover:text-emerald-400"
+            onClick={() => {
+              if (!currentUser) {
+                addToast({
+                  type: 'info',
+                  title: 'Sign In Required',
+                  description: 'Please sign in or create an account to view the dashboard.',
+                });
+                setIsAuthModalOpen(true);
+                return;
+              }
+              setActiveView('dashboard');
+            }}
+            className="hover:text-forest dark:hover:text-emerald-400 cursor-pointer"
           >
             Dashboard
           </button>
           <button
-            onClick={() => setActiveView('timetable')}
-            className="hover:text-forest dark:hover:text-emerald-400"
+            onClick={() => {
+              if (!currentUser) {
+                addToast({
+                  type: 'info',
+                  title: 'Sign In Required',
+                  description: 'Please sign in or create an account to view your timetable.',
+                });
+                setIsAuthModalOpen(true);
+                return;
+              }
+              setActiveView('timetable');
+            }}
+            className="hover:text-forest dark:hover:text-emerald-400 cursor-pointer"
           >
             Timetable
           </button>
           <button
-            onClick={() => setActiveView('settings')}
-            className="hover:text-forest dark:hover:text-emerald-400"
+            onClick={() => {
+              if (!currentUser) {
+                addToast({
+                  type: 'info',
+                  title: 'Sign In Required',
+                  description: 'Please sign in or create an account to view settings and data.',
+                });
+                setIsAuthModalOpen(true);
+                return;
+              }
+              setActiveView('settings');
+            }}
+            className="hover:text-forest dark:hover:text-emerald-400 cursor-pointer"
           >
             Data & Privacy
           </button>

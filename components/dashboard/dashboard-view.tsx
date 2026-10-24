@@ -51,6 +51,7 @@ export function DashboardView({
     setIsOnboardingOpen,
     loadSamplePlan,
     leaveSamplePlan,
+    userName,
   } = usePlanner();
 
   const subjects = data.subjects;
@@ -83,7 +84,7 @@ export function DashboardView({
             </div>
 
             <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-ink-950 dark:text-white">
-              Your semester starts here.
+              Welcome, {userName}. Your semester starts here.
             </h1>
 
             <p className="text-sm sm:text-base text-ink-600 dark:text-ink-300 leading-relaxed">

@@ -131,6 +131,8 @@ interface PlannerContextType {
 
   // Supabase Auth & Cloud Sync
   currentUser: any | null;
+  userName: string;
+  updateUserName: (newName: string) => Promise<boolean>;
   syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
@@ -144,13 +146,37 @@ const PlannerContext = createContext<PlannerContextType | undefined>(undefined);
 export function PlannerProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData>(() => createDefaultEmptyData());
   const [isLoaded, setIsLoaded] = useState(false);
-  const [activeView, setActiveView] = useState<ActiveView>('landing');
+  const [activeView, _setActiveView] = useState<ActiveView>('landing');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isRescueModalOpen, setIsRescueModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [currentUser, setCurrentUser] = useState<any | null>(null);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+
+  // Gated setActiveView: features are strictly accessible after logging in
+  const setActiveView = (view: ActiveView) => {
+    if (!currentUser && view !== 'landing') {
+      setIsAuthModalOpen(true);
+      addToast({
+        type: 'info',
+        title: 'Sign In Required',
+        description: 'Please sign in or create an account to access the study planner and all features.',
+      });
+      return;
+    }
+    _setActiveView(view);
+  };
+
+  // Derive active username: user display name -> Supabase metadata -> email prefix -> Student
+  const userName =
+    data.profile.displayName && data.profile.displayName.trim() !== '' && data.profile.displayName !== 'Student'
+      ? data.profile.displayName.trim()
+      : (currentUser?.user_metadata?.full_name?.trim() ||
+         currentUser?.user_metadata?.display_name?.trim() ||
+         currentUser?.user_metadata?.name?.trim() ||
+         (data.profile.displayName && data.profile.displayName.trim() !== '' ? data.profile.displayName.trim() : '') ||
+         (currentUser?.email ? currentUser.email.split('@')[0] : 'Student'));
 
   // Hydration & Theme initialization
   useEffect(() => {
@@ -185,6 +211,16 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         .then(({ data: authData, error }) => {
           if (!error && authData?.user) {
             setCurrentUser(authData.user);
+            const metaName = authData.user.user_metadata?.full_name || authData.user.user_metadata?.display_name || authData.user.user_metadata?.name;
+            if (metaName) {
+              setData((prev) => {
+                if (prev.profile.displayName && prev.profile.displayName !== 'Student') return prev;
+                return {
+                  ...prev,
+                  profile: { ...prev.profile, displayName: metaName },
+                };
+              });
+            }
           }
         })
         .catch((err) => {
@@ -192,7 +228,20 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         });
 
       const res = supabase.auth.onAuthStateChange((_event, session) => {
-        setCurrentUser(session?.user || null);
+        const u = session?.user || null;
+        setCurrentUser(u);
+        if (u) {
+          const metaName = u.user_metadata?.full_name || u.user_metadata?.display_name || u.user_metadata?.name;
+          if (metaName) {
+            setData((prev) => {
+              if (prev.profile.displayName && prev.profile.displayName !== 'Student') return prev;
+              return {
+                ...prev,
+                profile: { ...prev.profile, displayName: metaName },
+              };
+            });
+          }
+        }
       });
       authListener = res?.data;
     } catch (authInitErr) {
@@ -1024,6 +1073,61 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         exportData,
         importData,
         currentUser,
+        userName,
+        updateUserName: async (newName: string): Promise<boolean> => {
+          const trimmed = newName.trim();
+          if (!trimmed) {
+            addToast({
+              type: 'error',
+              title: 'Invalid Name',
+              description: 'User name cannot be blank.',
+            });
+            return false;
+          }
+
+          setData((prev) => ({
+            ...prev,
+            profile: {
+              ...prev.profile,
+              displayName: trimmed,
+            },
+          }));
+
+          if (currentUser) {
+            try {
+              await supabase.auth.updateUser({
+                data: {
+                  full_name: trimmed,
+                  display_name: trimmed,
+                  name: trimmed,
+                },
+              });
+              setCurrentUser((prev: any) =>
+                prev
+                  ? {
+                      ...prev,
+                      user_metadata: {
+                        ...prev.user_metadata,
+                        full_name: trimmed,
+                        display_name: trimmed,
+                        name: trimmed,
+                      },
+                    }
+                  : prev
+              );
+            } catch (err) {
+              console.warn('[SEMESTER] Supabase user metadata update notice:', err);
+            }
+          }
+
+          addToast({
+            type: 'success',
+            title: 'User Name Saved',
+            description: `Your display name has been set to "${trimmed}".`,
+          });
+
+          return true;
+        },
         syncStatus,
         isAuthModalOpen,
         setIsAuthModalOpen,
@@ -1087,10 +1191,11 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
           } catch {}
           setCurrentUser(null);
           setSyncStatus('idle');
+          _setActiveView('landing');
           addToast({
             type: 'info',
-            title: 'Signed out',
-            description: 'You are now working in offline/guest mode.',
+            title: 'Signed Out',
+            description: 'You have been logged out. Sign in anytime to access your planner.',
           });
         },
       }}

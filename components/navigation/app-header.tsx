@@ -50,8 +50,10 @@ export function AppHeader({
     setIsRescueModalOpen,
     leaveSamplePlan,
     currentUser,
+    userName,
     setIsAuthModalOpen,
     signOut,
+    addToast,
   } = usePlanner();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -79,6 +81,15 @@ export function AppHeader({
   ];
 
   const handleNavClick = (view: ActiveView) => {
+    if (!currentUser && view !== 'landing') {
+      addToast({
+        type: 'info',
+        title: 'Sign In Required',
+        description: 'Please sign in or create an account to access the study planner.',
+      });
+      setIsAuthModalOpen(true);
+      return;
+    }
     setActiveView(view);
     setMobileMenuOpen(false);
     setMoreDropdownOpen(false);
@@ -260,7 +271,18 @@ export function AppHeader({
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* Open planner */}
                 <button
-                  onClick={() => setActiveView('dashboard')}
+                  onClick={() => {
+                    if (!currentUser) {
+                      addToast({
+                        type: 'info',
+                        title: 'Sign In Required',
+                        description: 'Please sign in or create an account to access your study planner.',
+                      });
+                      setIsAuthModalOpen(true);
+                      return;
+                    }
+                    setActiveView('dashboard');
+                  }}
                   className="inline-flex items-center gap-1 text-xs font-semibold text-ink-700 dark:text-ink-300 hover:text-forest dark:hover:text-emerald-400 transition-colors px-2 py-1.5 cursor-pointer"
                   title="Open full interactive planner"
                 >
@@ -269,9 +291,9 @@ export function AppHeader({
 
                 {/* Login & Sign Up vs Logout based on authentication */}
                 {currentUser ? (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium border border-forest/20">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium border border-forest/20" title={`Signed in as ${userName} (${currentUser.email})`}>
                     <User className="w-3.5 h-3.5 shrink-0" />
-                    <span className="max-w-[110px] truncate hidden sm:inline">{currentUser.email?.split('@')[0] || 'Student'}</span>
+                    <span className="max-w-[120px] truncate hidden sm:inline font-semibold">{userName}</span>
                     <button
                       onClick={() => signOut()}
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
@@ -305,7 +327,18 @@ export function AppHeader({
                 {/* Download PDF */}
                 {onOpenPdfExport && (
                   <button
-                    onClick={onOpenPdfExport}
+                    onClick={() => {
+                      if (!currentUser) {
+                        addToast({
+                          type: 'info',
+                          title: 'Sign In Required',
+                          description: 'Please sign in or create an account to download your study plan.',
+                        });
+                        setIsAuthModalOpen(true);
+                        return;
+                      }
+                      onOpenPdfExport();
+                    }}
                     className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 bg-paper-100 hover:bg-paper-200 dark:bg-paper-800 dark:hover:bg-paper-750 text-ink-900 dark:text-ink-100 hover:text-forest dark:hover:text-emerald-300 text-xs font-semibold transition-all cursor-pointer"
                   >
                     <FileDown className="w-3.5 h-3.5 text-forest dark:text-emerald-400" />
@@ -315,7 +348,18 @@ export function AppHeader({
 
                 {/* Build study plan */}
                 <button
-                  onClick={() => setIsOnboardingOpen(true)}
+                  onClick={() => {
+                    if (!currentUser) {
+                      addToast({
+                        type: 'info',
+                        title: 'Sign In Required',
+                        description: 'Please sign in or create an account to build your study plan.',
+                      });
+                      setIsAuthModalOpen(true);
+                      return;
+                    }
+                    setIsOnboardingOpen(true);
+                  }}
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-semibold shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-forest cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
@@ -328,7 +372,13 @@ export function AppHeader({
                 {/* Assistant Trigger Button */}
                 {onOpenWhatToStudy && (
                   <button
-                    onClick={onOpenWhatToStudy}
+                    onClick={() => {
+                      if (!currentUser) {
+                        setIsAuthModalOpen(true);
+                        return;
+                      }
+                      onOpenWhatToStudy();
+                    }}
                     className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-xs font-semibold transition-all shadow-2xs cursor-pointer"
                     title="Calculate next best study task"
                   >
@@ -340,7 +390,13 @@ export function AppHeader({
                 {/* PDF Planner Download Button */}
                 {onOpenPdfExport && (
                   <button
-                    onClick={onOpenPdfExport}
+                    onClick={() => {
+                      if (!currentUser) {
+                        setIsAuthModalOpen(true);
+                        return;
+                      }
+                      onOpenPdfExport();
+                    }}
                     className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-paper-300 dark:border-paper-700 bg-paper-100 hover:bg-paper-200 dark:bg-paper-800 dark:hover:bg-paper-750 text-ink-900 dark:text-ink-100 hover:text-forest dark:hover:text-emerald-300 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
                     title="Download printable study planner PDF"
                   >
@@ -352,7 +408,13 @@ export function AppHeader({
                 {/* Quick Add Session Button */}
                 {onOpenNewSession && (
                   <button
-                    onClick={onOpenNewSession}
+                    onClick={() => {
+                      if (!currentUser) {
+                        setIsAuthModalOpen(true);
+                        return;
+                      }
+                      onOpenNewSession();
+                    }}
                     className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-forest hover:bg-forest-hover text-white text-xs font-medium shadow-subtle transition-all cursor-pointer"
                   >
                     <span>+ Session</span>
@@ -361,9 +423,9 @@ export function AppHeader({
 
                 {/* Auth Controls in planner view */}
                 {currentUser ? (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium border border-forest/20">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium border border-forest/20" title={`Signed in as ${userName} (${currentUser.email})`}>
                     <User className="w-3.5 h-3.5 shrink-0" />
-                    <span className="max-w-[100px] truncate hidden md:inline">{currentUser.email?.split('@')[0] || 'Student'}</span>
+                    <span className="max-w-[120px] truncate hidden md:inline font-semibold">{userName}</span>
                     <button
                       onClick={() => signOut()}
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
@@ -507,9 +569,9 @@ export function AppHeader({
             {/* Mobile Auth Actions */}
             {currentUser ? (
               <div className="flex items-center justify-between px-3 py-2 bg-paper-200/50 dark:bg-paper-800/50 rounded-md">
-                <div className="flex items-center gap-2 text-xs font-medium text-forest dark:text-emerald-400">
+                <div className="flex items-center gap-2 text-xs font-medium text-forest dark:text-emerald-400" title={`Signed in as ${userName} (${currentUser.email})`}>
                   <User className="w-4 h-4" />
-                  <span className="truncate">{currentUser.email || 'Student'}</span>
+                  <span className="truncate font-semibold">{userName}</span>
                 </div>
                 <button
                   onClick={() => {

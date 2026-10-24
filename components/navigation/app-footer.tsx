@@ -10,7 +10,7 @@ interface AppFooterProps {
 }
 
 export function AppFooter({ onOpenPdfExport, onOpenWhatToStudy }: AppFooterProps) {
-  const { setActiveView, setIsOnboardingOpen } = usePlanner();
+  const { setActiveView, setIsOnboardingOpen, currentUser, setIsAuthModalOpen, addToast } = usePlanner();
   const [legalModalOpen, setLegalModalOpen] = useState<'about' | 'privacy' | null>(null);
 
   const currentYear = new Date().getFullYear();
@@ -100,7 +100,18 @@ export function AppFooter({ onOpenPdfExport, onOpenWhatToStudy }: AppFooterProps
                 {onOpenWhatToStudy && (
                   <li>
                     <button
-                      onClick={onOpenWhatToStudy}
+                      onClick={() => {
+                        if (!currentUser) {
+                          addToast({
+                            type: 'info',
+                            title: 'Sign In Required',
+                            description: 'Please sign in or create an account to access the study assistant.',
+                          });
+                          setIsAuthModalOpen(true);
+                          return;
+                        }
+                        onOpenWhatToStudy();
+                      }}
                       className="hover:text-forest dark:hover:text-emerald-400 transition-colors text-left"
                     >
                       What should I study now?
@@ -110,7 +121,18 @@ export function AppFooter({ onOpenPdfExport, onOpenWhatToStudy }: AppFooterProps
                 {onOpenPdfExport && (
                   <li>
                     <button
-                      onClick={onOpenPdfExport}
+                      onClick={() => {
+                        if (!currentUser) {
+                          addToast({
+                            type: 'info',
+                            title: 'Sign In Required',
+                            description: 'Please sign in or create an account to download your study plan.',
+                          });
+                          setIsAuthModalOpen(true);
+                          return;
+                        }
+                        onOpenPdfExport();
+                      }}
                       className="hover:text-forest dark:hover:text-emerald-400 transition-colors text-left flex items-center gap-1"
                     >
                       <FileDown className="w-3 h-3 text-forest dark:text-emerald-400" />
@@ -120,7 +142,18 @@ export function AppFooter({ onOpenPdfExport, onOpenWhatToStudy }: AppFooterProps
                 )}
                 <li>
                   <button
-                    onClick={() => setIsOnboardingOpen(true)}
+                    onClick={() => {
+                      if (!currentUser) {
+                        addToast({
+                          type: 'info',
+                          title: 'Sign In Required',
+                          description: 'Please sign in or create an account to configure your study plan.',
+                        });
+                        setIsAuthModalOpen(true);
+                        return;
+                      }
+                      setIsOnboardingOpen(true);
+                    }}
                     className="hover:text-forest dark:hover:text-emerald-400 transition-colors text-left"
                   >
                     Re-run Personal Onboarding

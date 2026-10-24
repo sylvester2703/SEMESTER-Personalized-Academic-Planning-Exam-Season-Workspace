@@ -98,15 +98,19 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialMode = 'signin' }
           throw error;
         }
 
+        const userMeta = (data.user?.user_metadata as any) || {};
+        const metaName = userMeta.full_name || userMeta.display_name || userMeta.name || email.split('@')[0];
+
         addToast({
           type: 'success',
           title: 'Welcome back',
-          description: `Signed in as ${data.user?.email}.`,
+          description: `Signed in as ${metaName}.`,
         });
 
         updateProfile({
           email: data.user?.email || email,
-          phone: (data.user?.user_metadata as any)?.phone || undefined,
+          displayName: metaName,
+          phone: userMeta.phone || undefined,
         });
 
         // Automatically fetch cloud data or offer sync
