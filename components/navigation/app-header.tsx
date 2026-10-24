@@ -267,18 +267,18 @@ export function AppHeader({
                   <span>Open planner</span>
                 </button>
 
-                {/* Login & Sign Up (placed right beside Open Planner and Build study plan) */}
+                {/* Login & Sign Up vs Logout based on authentication */}
                 {currentUser ? (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium border border-forest/20">
                     <User className="w-3.5 h-3.5 shrink-0" />
-                    <span className="max-w-[110px] truncate">{currentUser.email?.split('@')[0] || 'Student'}</span>
+                    <span className="max-w-[110px] truncate hidden sm:inline">{currentUser.email?.split('@')[0] || 'Student'}</span>
                     <button
                       onClick={() => signOut()}
-                      className="inline-flex items-center gap-1 text-xs text-ink-500 hover:text-rose-600 dark:hover:text-rose-400 ml-1 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                       title="Sign Out"
                     >
                       <LogOut className="w-3 h-3" />
-                      <span className="hidden sm:inline">Logout</span>
+                      <span>Logout</span>
                     </button>
                   </div>
                 ) : (
@@ -361,12 +361,12 @@ export function AppHeader({
 
                 {/* Auth Controls in planner view */}
                 {currentUser ? (
-                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-400 text-xs font-medium border border-forest/20">
                     <User className="w-3.5 h-3.5 shrink-0" />
-                    <span className="max-w-[110px] truncate">{currentUser.email?.split('@')[0] || 'Student'}</span>
+                    <span className="max-w-[100px] truncate hidden md:inline">{currentUser.email?.split('@')[0] || 'Student'}</span>
                     <button
                       onClick={() => signOut()}
-                      className="inline-flex items-center gap-1 text-xs text-ink-500 hover:text-rose-600 dark:hover:text-rose-400 ml-1 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                       title="Sign Out"
                     >
                       <LogOut className="w-3 h-3" />
@@ -516,9 +516,10 @@ export function AppHeader({
                     setMobileMenuOpen(false);
                     signOut();
                   }}
-                  className="text-xs text-rose-600 font-semibold"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-xs text-rose-700 dark:text-rose-300 font-semibold transition-colors cursor-pointer"
                 >
-                  Logout
+                  <LogOut className="w-3 h-3" />
+                  <span>Logout</span>
                 </button>
               </div>
             ) : (

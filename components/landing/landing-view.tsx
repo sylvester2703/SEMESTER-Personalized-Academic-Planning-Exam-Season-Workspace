@@ -14,6 +14,7 @@ import {
   User,
   UserPlus,
   LogIn,
+  LogOut,
   CheckCircle2,
   Coffee,
   BookOpen,
@@ -23,7 +24,7 @@ import {
 } from 'lucide-react';
 
 export function LandingView() {
-  const { data, setActiveView, setIsOnboardingOpen, setIsAuthModalOpen } = usePlanner();
+  const { data, setActiveView, setIsOnboardingOpen, setIsAuthModalOpen, currentUser, signOut } = usePlanner();
 
   // Live ticking countdown for "Extra Marks for Effort"
   const [countdown, setCountdown] = useState(() => calculateExamCountdown(data.subjects));
@@ -76,31 +77,59 @@ export function LandingView() {
           Turn a crowded university exam timetable into a realistic study routine, one focused session at a time. No complex setup, no fake metrics, no guilt.
         </p>
 
-        {/* Primary CTAs with Sign Up & Sign In Buttons (Must-Have) */}
+        {/* Primary CTAs: Conditionally renders Login/Sign Up vs Logout based on authentication */}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <button
-            onClick={() => setIsAuthModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-forest hover:bg-forest-hover text-white text-sm font-bold shadow-card hover:shadow-dropdown transition-all cursor-pointer ring-2 ring-forest/30"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Sign Up Free</span>
-          </button>
+          {currentUser ? (
+            <>
+              <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-forest/10 dark:bg-forest/20 text-forest dark:text-emerald-300 text-sm font-medium border border-forest/30">
+                <User className="w-4 h-4 shrink-0" />
+                <span>Logged in as <strong>{currentUser.email}</strong></span>
+              </div>
 
-          <button
-            onClick={() => setIsAuthModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-ink-100 text-sm font-semibold hover:bg-paper-100 dark:hover:bg-paper-800 transition-colors shadow-subtle cursor-pointer"
-          >
-            <LogIn className="w-4 h-4 text-forest dark:text-emerald-400" />
-            <span>Sign In / Login</span>
-          </button>
+              <button
+                onClick={() => signOut()}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-rose-300 dark:border-rose-800 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-sm font-semibold transition-colors shadow-subtle cursor-pointer"
+                title="Sign out of your account"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
 
-          <button
-            onClick={() => setIsOnboardingOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-forest/30 bg-forest/5 dark:bg-forest/20 text-forest dark:text-emerald-300 text-sm font-semibold hover:bg-forest/10 transition-colors shadow-subtle cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Build My Study Plan</span>
-          </button>
+              <button
+                onClick={() => setActiveView('dashboard')}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-forest hover:bg-forest-hover text-white text-sm font-bold shadow-card hover:shadow-dropdown transition-all cursor-pointer ring-2 ring-forest/30"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Open Study Planner</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-forest hover:bg-forest-hover text-white text-sm font-bold shadow-card hover:shadow-dropdown transition-all cursor-pointer ring-2 ring-forest/30"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Sign Up Free</span>
+              </button>
+
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-paper-300 dark:border-paper-700 bg-white dark:bg-paper-900 text-ink-900 dark:text-ink-100 text-sm font-semibold hover:bg-paper-100 dark:hover:bg-paper-800 transition-colors shadow-subtle cursor-pointer"
+              >
+                <LogIn className="w-4 h-4 text-forest dark:text-emerald-400" />
+                <span>Sign In / Login</span>
+              </button>
+
+              <button
+                onClick={() => setIsOnboardingOpen(true)}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-forest/30 bg-forest/5 dark:bg-forest/20 text-forest dark:text-emerald-300 text-sm font-semibold hover:bg-forest/10 transition-colors shadow-subtle cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Build My Study Plan</span>
+              </button>
+            </>
+          )}
 
           <button
             onClick={() => setActiveView('dashboard')}
@@ -445,18 +474,39 @@ export function LandingView() {
             SEMESTER runs entirely in your web browser. No subscriptions, no gated premium tiers, no personal data harvesting, and no account barriers.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className="px-6 py-3 rounded-lg bg-white text-forest hover:bg-paper-100 text-xs font-semibold shadow-sm transition-all cursor-pointer"
-            >
-              Sign Up & Create Study Plan
-            </button>
-            <button
-              onClick={() => setActiveView('dashboard')}
-              className="px-6 py-3 rounded-lg border border-white/40 hover:bg-white/10 text-white text-xs font-medium transition-colors cursor-pointer"
-            >
-              Open Workspace
-            </button>
+            {currentUser ? (
+              <>
+                <button
+                  onClick={() => setActiveView('dashboard')}
+                  className="px-6 py-3 rounded-lg bg-white text-forest hover:bg-paper-100 text-xs font-semibold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Open Your Planner</span>
+                </button>
+                <button
+                  onClick={() => signOut()}
+                  className="px-5 py-3 rounded-lg border border-white/60 hover:bg-white/10 text-white text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Logout ({currentUser.email?.split('@')[0]})</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-6 py-3 rounded-lg bg-white text-forest hover:bg-paper-100 text-xs font-semibold shadow-sm transition-all cursor-pointer"
+                >
+                  Sign Up & Create Study Plan
+                </button>
+                <button
+                  onClick={() => setActiveView('dashboard')}
+                  className="px-6 py-3 rounded-lg border border-white/40 hover:bg-white/10 text-white text-xs font-medium transition-colors cursor-pointer"
+                >
+                  Open Workspace
+                </button>
+              </>
+            )}
           </div>
         </div>
       </section>

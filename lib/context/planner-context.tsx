@@ -161,6 +161,22 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     // Apply theme
     applyThemeClass(loaded.profile.theme);
 
+    // Clean any legacy persistent auth tokens from localStorage so sessions are strictly browser-session only
+    if (typeof window !== 'undefined') {
+      try {
+        const toDelete: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            toDelete.push(key);
+          }
+        }
+        toDelete.forEach((k) => localStorage.removeItem(k));
+      } catch {
+        // Ignore
+      }
+    }
+
     // Listen to Supabase Auth state safely with error shielding
     let authListener: { subscription?: { unsubscribe: () => void } } | undefined;
     try {
@@ -1064,6 +1080,11 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
         },
         signOut: async () => {
           await signOutUser();
+          try {
+            if (typeof window !== 'undefined') {
+              window.sessionStorage.clear();
+            }
+          } catch {}
           setCurrentUser(null);
           setSyncStatus('idle');
           addToast({
